@@ -24,6 +24,17 @@ class CollectionRequestCreate(BaseModel):
         min_length=5,
         max_length=500,
     )
+    pickup_latitude: float | None = Field(
+        default=None,
+        ge=-90,
+        le=90,
+    )
+
+    pickup_longitude: float | None = Field(
+        default=None,
+        ge=-180,
+        le=180,
+    )
 
     waste_type: str = Field(
         min_length=2,
@@ -66,6 +77,8 @@ class CollectionRequestResponse(BaseModel):
     priority: CollectionRequestPriority
     status: CollectionRequestStatus
     pickup_address: str
+    pickup_latitude: float | None
+    pickup_longitude: float | None
     waste_type: str
     quantity_estimate: float | None
     quantity_unit: str | None

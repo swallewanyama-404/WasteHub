@@ -85,6 +85,15 @@ class CollectionRequest(Base):
         String(500),
         nullable=False,
     )
+    pickup_latitude: Mapped[float | None] = mapped_column(
+        Numeric(10, 7),
+        nullable=True,
+    )
+
+    pickup_longitude: Mapped[float | None] = mapped_column(
+        Numeric(10, 7),
+        nullable=True,
+    )
 
     waste_type: Mapped[str] = mapped_column(
         String(100),

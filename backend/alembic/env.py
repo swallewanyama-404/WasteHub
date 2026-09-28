@@ -5,7 +5,7 @@ from alembic import context
 
 from backend.app.core.config import settings
 from backend.app.db.base import Base
-from backend.app.models.user import User
+import backend.app.models
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
@@ -36,7 +36,10 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

@@ -35,6 +35,8 @@ def create_request(
         priority=data.priority,
         status=CollectionRequestStatus.PENDING,
         pickup_address=data.pickup_address,
+        pickup_latitude=data.pickup_latitude,
+        pickup_longitude=data.pickup_longitude,
         waste_type=data.waste_type,
         quantity_estimate=data.quantity_estimate,
         quantity_unit=data.quantity_unit,
