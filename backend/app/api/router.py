@@ -19,8 +19,39 @@ from backend.app.api.routes.collection_assignments import (
 from backend.app.api.routes.operations_map import (
     router as operations_map_router,
 )
-
+from backend.app.api.routes.organization_portal import (
+    router as organization_portal_router,
+)
+from backend.app.api.routes.organization_operations import (
+    router as organization_operations_router,
+)
+from backend.app.api.routes.organization_monitoring import (
+    router as organization_monitoring_router,
+)
+from backend.app.api.routes.organization_alerts import (
+    router as organization_alerts_router,
+)
 api_router = APIRouter()
+api_router.include_router(
+    organization_alerts_router,
+    prefix="/organization-portal",
+    tags=["Organization Portal"],
+)
+api_router.include_router(
+    organization_monitoring_router,
+    prefix="/organization-portal",
+    tags=["Organization Portal"],
+)
+api_router.include_router(
+    organization_operations_router,
+    prefix="/organization-portal",
+    tags=["Organization Portal"],
+)
+api_router.include_router(
+    organization_portal_router,
+    prefix="/organization-portal",
+    tags=["Organization Portal"],
+)
 
 api_router.include_router(
     operations_map_router,
