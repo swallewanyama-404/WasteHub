@@ -31,7 +31,15 @@ from backend.app.api.routes.organization_monitoring import (
 from backend.app.api.routes.organization_alerts import (
     router as organization_alerts_router,
 )
+from backend.app.api.routes.collector_workflow import (
+    router as collector_workflow_router,
+)
 api_router = APIRouter()
+api_router.include_router(
+    collector_workflow_router,
+    prefix="/collector",
+    tags=["Collector Workflow"],
+)
 api_router.include_router(
     organization_alerts_router,
     prefix="/organization-portal",

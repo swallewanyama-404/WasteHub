@@ -10,6 +10,7 @@ from backend.app.db.base import Base
 class AssignmentStatus(str, Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
+    REJECTED = "rejected"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     MISSED = "missed"
