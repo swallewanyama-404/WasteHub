@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from backend.app.api.router import api_router
 from backend.app.core.config import settings
 from backend.app.core.exceptions import WasteHubException
+from backend.app.core.middleware import SecurityHeadersMiddleware
 
 
 app = FastAPI(
@@ -24,6 +25,8 @@ cors_origins = [
     if origin.strip()
 ]
 
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
