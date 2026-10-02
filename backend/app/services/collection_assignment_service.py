@@ -147,7 +147,13 @@ def update_assignment_status(
     current_user: User,
     notes: str | None = None,
 ) -> CollectionAssignment:
+    """
+    Compatibility entry point for the older assignment-status endpoint.
 
+    All state transitions are delegated to the canonical Stage 9 workflow
+    services so request status, events, GPS progression, and acceptance rules
+    cannot drift between endpoints.
+    """
     assignment = get_assignment(
         db,
         assignment_id,
@@ -158,85 +164,52 @@ def update_assignment_status(
             "You can only update assignments assigned to you."
         )
 
-    normalized_status = new_status.lower()
+    normalized_status = new_status.lower().strip()
 
-    allowed_statuses = {
-        "accepted": AssignmentStatus.ACCEPTED,
-        "in_progress": AssignmentStatus.IN_PROGRESS,
-        "completed": AssignmentStatus.COMPLETED,
-        "missed": AssignmentStatus.MISSED,
-    }
+    from backend.app.schemas.route_progress import RouteStopAction
+    from backend.app.services.collector_workflow_service import (
+        accept_assignment,
+    )
+    from backend.app.services.route_progress_service import (
+        complete_collection_stop,
+        miss_collection_stop,
+        start_collection_stop,
+    )
 
-    if normalized_status not in allowed_statuses:
+    if normalized_status == "accepted":
+        accept_assignment(
+            db=db,
+            assignment_id=assignment_id,
+            collector_id=current_user.id,
+            notes=notes,
+        )
+    elif normalized_status == "in_progress":
+        start_collection_stop(
+            db=db,
+            assignment_id=assignment_id,
+            collector_id=current_user.id,
+            data=RouteStopAction(notes=notes),
+        )
+    elif normalized_status == "completed":
+        complete_collection_stop(
+            db=db,
+            assignment_id=assignment_id,
+            collector_id=current_user.id,
+            data=RouteStopAction(notes=notes),
+        )
+    elif normalized_status == "missed":
+        miss_collection_stop(
+            db=db,
+            assignment_id=assignment_id,
+            collector_id=current_user.id,
+            data=RouteStopAction(notes=notes),
+        )
+    else:
         raise ConflictException(
             "Invalid assignment status."
         )
 
-    target_status = allowed_statuses[
-        normalized_status
-    ]
-
-    current_status = assignment.status
-
-    valid_transitions = {
-        AssignmentStatus.PENDING: {
-            AssignmentStatus.ACCEPTED,
-            AssignmentStatus.IN_PROGRESS,
-            AssignmentStatus.MISSED,
-        },
-        AssignmentStatus.ACCEPTED: {
-            AssignmentStatus.IN_PROGRESS,
-            AssignmentStatus.MISSED,
-        },
-        AssignmentStatus.IN_PROGRESS: {
-            AssignmentStatus.COMPLETED,
-            AssignmentStatus.MISSED,
-        },
-    }
-
-    if target_status not in valid_transitions.get(
-        current_status,
-        set(),
-    ):
-        raise ConflictException(
-            f"Cannot change assignment from "
-            f"{current_status.value} to "
-            f"{target_status.value}."
-        )
-
-    assignment.status = target_status
-
-    if notes:
-        assignment.notes = notes
-
-    event_type_map = {
-        AssignmentStatus.ACCEPTED: None,
-        AssignmentStatus.IN_PROGRESS:
-            CollectionEventType.STARTED,
-        AssignmentStatus.COMPLETED:
-            CollectionEventType.COMPLETED,
-        AssignmentStatus.MISSED:
-            CollectionEventType.MISSED,
-    }
-
-    event_type = event_type_map.get(
-        target_status
+    return get_assignment(
+        db,
+        assignment_id,
     )
-
-    if event_type is not None:
-        event = CollectionEvent(
-            assignment_id=assignment.id,
-            event_type=event_type,
-            notes=notes,
-            created_by=current_user.id,
-        )
-
-        create_event(
-            db,
-            event,
-        )
-
-    db.commit()
-    db.refresh(assignment)
-
-    return assignment
