@@ -381,6 +381,30 @@ def main():
         == assignment_1_id
     )
 
+    accepted_first = api(
+        "POST",
+        f"/collector/assignments/{assignment_1_id}/accept",
+        {"notes": "Stage 9 acceptance before route start"},
+        collector_token,
+    )
+
+    print_result(
+        "5A. FIRST ASSIGNMENT ACCEPTED",
+        accepted_first,
+    )
+
+    accepted_second = api(
+        "POST",
+        f"/collector/assignments/{assignment_2_id}/accept",
+        {"notes": "Stage 9 acceptance for automatic next stop"},
+        collector_token,
+    )
+
+    print_result(
+        "5B. SECOND ASSIGNMENT ACCEPTED",
+        accepted_second,
+    )
+
     tracking_session = api(
         "POST",
         "/tracking/sessions",
