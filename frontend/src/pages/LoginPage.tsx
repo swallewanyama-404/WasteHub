@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api";
 
@@ -106,6 +106,10 @@ export function LoginPage() {
             {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        <p className="muted auth-footer">
+          New resident? <Link to="/register">Create resident account</Link>
+        </p>
       </section>
     </main>
   );
