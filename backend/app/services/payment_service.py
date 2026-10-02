@@ -1,12 +1,11 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from uuid import uuid4
-
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.core.config import settings
+from backend.app.integrations.payments import get_payment_gateway
 from backend.app.models.collection_request import CollectionRequest
 from backend.app.models.payment import Payment
 from backend.app.models.user import User
@@ -28,15 +27,24 @@ def create_payment(
     if request.resident_id != resident.id:
         raise HTTPException(status_code=403, detail="This request does not belong to you")
 
+    gateway = get_payment_gateway()
+    initiation = gateway.initiate(
+        amount=data.amount,
+        currency="UGX",
+        method=data.method,
+        request_id=request.id,
+        resident_id=resident.id,
+    )
+
     payment = Payment(
         resident_id=resident.id,
         request_id=request.id,
         amount=data.amount,
         currency="UGX",
         method=data.method,
-        provider=settings.payment_provider,
-        status="pending",
-        external_reference=f"WH-{uuid4().hex[:20].upper()}",
+        provider=initiation.provider,
+        status=initiation.status,
+        external_reference=initiation.external_reference,
     )
 
     db.add(payment)
