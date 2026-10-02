@@ -253,6 +253,7 @@ def intervene_assignment(
         )
 
     if assignment.status in (
+        AssignmentStatus.REJECTED,
         AssignmentStatus.COMPLETED,
         AssignmentStatus.MISSED,
         AssignmentStatus.CANCELLED,
