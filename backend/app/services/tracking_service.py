@@ -244,3 +244,18 @@ def get_tracking_location_history(
     )
 
     return list(db.scalars(statement).all())
+
+def get_active_tracking_sessions_for_collector(
+    db: Session,
+    collector_id: int,
+) -> list[TrackingSession]:
+    return list(
+        db.scalars(
+            select(TrackingSession)
+            .where(
+                TrackingSession.collector_id == collector_id,
+                TrackingSession.ended_at.is_(None),
+            )
+            .order_by(TrackingSession.started_at.desc())
+        ).all()
+    )
