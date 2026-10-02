@@ -25,6 +25,7 @@ UNASSIGNED_REQUEST_MINUTES = 60
 
 
 TERMINAL_ASSIGNMENT_STATUSES = {
+    AssignmentStatus.REJECTED,
     AssignmentStatus.COMPLETED,
     AssignmentStatus.MISSED,
     AssignmentStatus.CANCELLED,
