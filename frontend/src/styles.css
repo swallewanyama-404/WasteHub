@@ -582,3 +582,32 @@ a:focus-visible {
     height: 330px;
   }
 }
+
+
+.location-box,
+.demo-login-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem;
+  border-radius: 0.8rem;
+  background: #f4f8f7;
+  border: 1px solid #dce9e6;
+}
+
+.location-box p,
+.demo-login-box p {
+  margin: 0.25rem 0 0;
+}
+
+.demo-login-box {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .location-box {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
