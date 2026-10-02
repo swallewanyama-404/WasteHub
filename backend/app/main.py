@@ -66,6 +66,8 @@ app.include_router(
 @app.get("/")
 def root():
     return {
+        "name": settings.app_name,
+        "status": "running",
         "message": "Welcome to WasteHub API",
         "version": "0.1.0",
         "environment": settings.app_env,
