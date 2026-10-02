@@ -15,6 +15,9 @@ export function ResidentDashboardPage() {
   const [address, setAddress] = useState("");
   const [wasteType, setWasteType] = useState("Household waste");
   const [priority, setPriority] = useState("normal");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -53,18 +56,51 @@ export function ResidentDashboardPage() {
             priority,
             pickup_address: address,
             waste_type: wasteType,
+            pickup_latitude: latitude,
+            pickup_longitude: longitude,
           }),
         },
         token,
       );
 
       setAddress("");
+      setLatitude(null);
+      setLongitude(null);
       await loadRequests();
     } catch {
       setError("Could not create the collection request.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError("This browser does not support location services.");
+      return;
+    }
+
+    setLocating(true);
+    setError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setLocating(false);
+      },
+      () => {
+        setError(
+          "WasteHub could not access your location. You can still submit the address manually.",
+        );
+        setLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 5000,
+      },
+    );
   }
 
   return (
@@ -101,6 +137,25 @@ export function ResidentDashboardPage() {
                 required
               />
             </label>
+
+            <div className="location-box">
+              <div>
+                <strong>Pickup GPS location</strong>
+                <p className="muted">
+                  {latitude !== null && longitude !== null
+                    ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                    : "Optional. Add your current position to improve routing."}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="button secondary"
+                disabled={locating}
+                onClick={useCurrentLocation}
+              >
+                {locating ? "Locating…" : "Use my location"}
+              </button>
+            </div>
 
             <label>
               Priority
