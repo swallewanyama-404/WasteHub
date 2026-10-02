@@ -1,3 +1,4 @@
+from backend.app.api.routes.resident_tracking import router as resident_tracking_router
 from backend.app.api.routes.admin import router as admin_router
 from backend.app.api.routes.complaints import router as complaints_router
 from backend.app.api.routes.evidence import router as evidence_router
@@ -41,6 +42,11 @@ from backend.app.api.routes.collector_workflow import (
     router as collector_workflow_router,
 )
 api_router = APIRouter()
+api_router.include_router(
+    resident_tracking_router,
+    prefix="/resident",
+    tags=["Resident Tracking"],
+)
 api_router.include_router(
     notifications_router,
     prefix="/notifications",
