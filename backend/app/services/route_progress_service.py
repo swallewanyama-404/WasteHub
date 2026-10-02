@@ -25,6 +25,7 @@ from backend.app.schemas.route_progress import (
 
 
 TERMINAL_ASSIGNMENT_STATUSES = {
+    AssignmentStatus.REJECTED,
     AssignmentStatus.COMPLETED,
     AssignmentStatus.MISSED,
     AssignmentStatus.CANCELLED,
@@ -168,6 +169,12 @@ def _advance_tracking(
 
         return None
 
+    if next_assignment.status != AssignmentStatus.ACCEPTED:
+        if vehicle is not None:
+            vehicle.status = VehicleStatus.AVAILABLE
+
+        return None
+
     next_session = TrackingSession(
         assignment_id=next_assignment.id,
         vehicle_id=active_session.vehicle_id,
@@ -273,6 +280,12 @@ def start_collection_stop(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Collection stop is already in progress",
+        )
+
+    if assignment.status != AssignmentStatus.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Accept the assignment before starting collection",
         )
 
     collection_request = db.get(
