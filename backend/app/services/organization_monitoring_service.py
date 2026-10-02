@@ -28,6 +28,7 @@ from backend.app.schemas.organization_monitoring import (
 
 
 TERMINAL_ASSIGNMENT_STATUSES = {
+    AssignmentStatus.REJECTED,
     AssignmentStatus.COMPLETED,
     AssignmentStatus.MISSED,
     AssignmentStatus.CANCELLED,
