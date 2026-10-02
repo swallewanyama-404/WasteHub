@@ -450,6 +450,27 @@ def main():
         >= 2
     )
 
+    accepted_assignment = api(
+        "POST",
+        f"/collector/assignments/{assignment_one_id}/accept",
+        {
+            "notes": (
+                "Collector accepted organization portal test assignment"
+            )
+        },
+        collector_token,
+    )
+
+    show(
+        "8A. FIRST ASSIGNMENT ACCEPTED",
+        accepted_assignment,
+    )
+
+    assert (
+        accepted_assignment["assignment_status"]
+        == "accepted"
+    )
+
     past_time = (
         datetime.now(timezone.utc)
         - timedelta(hours=3)
