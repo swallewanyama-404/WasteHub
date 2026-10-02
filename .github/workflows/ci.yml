@@ -30,7 +30,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg://wastehub:wastehub_dev_password@localhost:5432/wastehub
-      SECRET_KEY: ci-secret-key
+      SECRET_KEY: wastehub-ci-secret-key-32-bytes-minimum-2026
       APP_ENV: test
       DEBUG: "false"
 
