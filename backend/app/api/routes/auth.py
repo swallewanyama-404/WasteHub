@@ -5,7 +5,6 @@ from backend.app.core.dependencies import (
     get_current_user,
     require_roles,
 )
-from backend.app.core.dependencies import get_current_user
 from backend.app.models.user import User
 from backend.app.db.session import get_db
 from backend.app.schemas.auth import (
@@ -71,6 +70,8 @@ def get_me(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
+
+
 @router.get(
     "/resident-area",
     response_model=UserResponse,
