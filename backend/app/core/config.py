@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     secret_key: str = "change-this-development-secret"
     access_token_expire_minutes: int = 30
+    media_root: str = "media"
+    payment_provider: str = "demo"
 
     cors_origins: str = (
         "http://localhost:3000,"
