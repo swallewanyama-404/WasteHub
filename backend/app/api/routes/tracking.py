@@ -11,6 +11,7 @@ from backend.app.schemas.tracking import (
     VehicleLocationResponse,
 )
 from backend.app.services.tracking_service import (
+    get_active_tracking_sessions_for_collector,
     get_latest_vehicle_location,
     get_tracking_location_history,
     record_vehicle_location,
@@ -20,6 +21,22 @@ from backend.app.services.tracking_service import (
 
 
 router = APIRouter()
+
+
+@router.get(
+    "/sessions/mine/active",
+    response_model=list[TrackingSessionResponse],
+)
+def active_sessions(
+    current_user: User = Depends(
+        require_roles("collector")
+    ),
+    db: Session = Depends(get_db),
+):
+    return get_active_tracking_sessions_for_collector(
+        db=db,
+        collector_id=current_user.id,
+    )
 
 
 @router.post(
