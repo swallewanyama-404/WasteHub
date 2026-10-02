@@ -98,7 +98,6 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["request_id"], ["collection_requests.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["resident_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("external_reference"),
         sa.UniqueConstraint("receipt_number"),
     )
     op.create_index("ix_payments_id", "payments", ["id"], unique=False)
