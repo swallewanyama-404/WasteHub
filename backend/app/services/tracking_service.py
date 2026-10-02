@@ -4,7 +4,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.collection_assignment import CollectionAssignment
+from backend.app.models.collection_assignment import (
+    AssignmentStatus,
+    CollectionAssignment,
+)
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
 from backend.app.models.vehicle_location import VehicleLocation
@@ -31,6 +34,12 @@ def start_tracking_session(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This assignment does not belong to the current collector",
+        )
+
+    if assignment.status != AssignmentStatus.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Accept the assignment before starting GPS tracking",
         )
 
     vehicle = db.get(Vehicle, data.vehicle_id)
