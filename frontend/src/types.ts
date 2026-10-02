@@ -334,3 +334,17 @@ export interface AuditLog {
   details: Record<string, unknown> | null;
   created_at: string;
 }
+
+
+export interface RouteProgress {
+  assignment_id: number;
+  request_id: number;
+  assignment_status: string;
+  request_status: string;
+  action: string;
+  next_assignment_id: number | null;
+  next_request_id: number | null;
+  next_pickup_address: string | null;
+  tracking_session_id: number | null;
+  remaining_stops: number;
+}
