@@ -1,3 +1,9 @@
+from backend.app.models.audit_log import AuditLog
+from backend.app.models.collection_evidence import CollectionEvidence
+from backend.app.models.complaint import Complaint
+from backend.app.models.feedback import Feedback
+from backend.app.models.notification import Notification
+from backend.app.models.payment import Payment
 from backend.app.models.collection_assignment import (
     AssignmentStatus,
     CollectionAssignment,
@@ -36,4 +42,10 @@ __all__ = [
     "VehicleStatus",
     "TrackingSession",
     "VehicleLocation",
+    "Notification",
+    "Complaint",
+    "Feedback",
+    "Payment",
+    "AuditLog",
+    "CollectionEvidence",
 ]
