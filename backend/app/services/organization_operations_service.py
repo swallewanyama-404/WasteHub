@@ -16,6 +16,8 @@ from backend.app.models.vehicle import (
     Vehicle,
     VehicleStatus,
 )
+from backend.app.services.audit_service import record_audit
+from backend.app.services.notification_service import create_notification
 from backend.app.schemas.organization_operations import (
     AvailableVehicleResponse,
     CollectorWorkloadResponse,
@@ -320,6 +322,40 @@ def dispatch_collection_request(
         )
 
     db.add(assignment)
+    db.flush()
+
+    create_notification(
+        db,
+        user_id=assignment.collector_id,
+        notification_type="assignment",
+        title="New collection assignment",
+        message=(
+            f"You have been assigned collection request #{collection_request.id}. "
+            "Open the collector workspace to review it."
+        ),
+    )
+
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_request",
+        title="Collection request assigned",
+        message=f"Your collection request #{collection_request.id} has been assigned to a collector.",
+    )
+
+    record_audit(
+        db,
+        actor_id=assigned_by,
+        action="assignment.dispatched",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={
+            "request_id": collection_request.id,
+            "provider_id": assignment.provider_id,
+            "collector_id": assignment.collector_id,
+        },
+    )
+
     db.commit()
 
     db.refresh(assignment)
