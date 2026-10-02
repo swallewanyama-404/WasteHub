@@ -46,6 +46,7 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         VITE_API_BASE_URL: /api/v1
+        VITE_DEMO_MODE: "true"
     container_name: wastehub-demo-frontend
     restart: unless-stopped
     ports:
