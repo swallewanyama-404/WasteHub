@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { ResidentDashboardPage } from "./pages/ResidentDashboardPage";
 import { CollectorDashboardPage } from "./pages/CollectorDashboardPage";
 import { OrganizationDashboardPage } from "./pages/OrganizationDashboardPage";
@@ -33,6 +34,7 @@ export function App() {
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       <Route
         path="/resident/tracking"
