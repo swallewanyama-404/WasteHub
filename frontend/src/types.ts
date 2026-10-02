@@ -348,3 +348,14 @@ export interface RouteProgress {
   tracking_session_id: number | null;
   remaining_stops: number;
 }
+
+
+export interface Zone {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
