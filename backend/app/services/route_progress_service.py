@@ -18,6 +18,8 @@ from backend.app.models.collection_request import (
 )
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
+from backend.app.services.audit_service import record_audit
+from backend.app.services.notification_service import create_notification
 from backend.app.schemas.route_progress import (
     RouteProgressResponse,
     RouteStopAction,
@@ -312,6 +314,23 @@ def start_collection_stop(
         notes=data.notes,
     )
 
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection started",
+        message=f"Collection request #{collection_request.id} is now in progress.",
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.started",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id},
+    )
+
     db.commit()
     db.refresh(assignment)
     db.refresh(collection_request)
@@ -386,6 +405,23 @@ def complete_collection_stop(
         collector_id=collector_id,
     )
 
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection completed",
+        message=f"Collection request #{collection_request.id} has been completed.",
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.completed",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id},
+    )
+
     db.commit()
     db.refresh(assignment)
     db.refresh(collection_request)
@@ -455,6 +491,26 @@ def miss_collection_stop(
         completed_assignment=assignment,
         next_assignment=next_assignment,
         collector_id=collector_id,
+    )
+
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection missed",
+        message=(
+            f"Collection request #{collection_request.id} was marked missed. "
+            "You can submit a complaint if follow-up is needed."
+        ),
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.missed",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id, "notes": data.notes},
     )
 
     db.commit()
