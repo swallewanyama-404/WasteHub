@@ -12,9 +12,17 @@ if errorlevel 1 goto :error
 
 echo.
 echo Waiting for WasteHub API to become ready...
+set /a API_WAIT_TRIES=0
 :wait_api
 powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/ -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1"
 if errorlevel 1 (
+    set /a API_WAIT_TRIES+=1
+    if %API_WAIT_TRIES% GEQ 90 (
+        echo.
+        echo WasteHub API did not become ready within 3 minutes.
+        docker compose -f docker-compose.demo.yml logs api
+        goto :error
+    )
     timeout /t 2 /nobreak >nul
     goto :wait_api
 )
