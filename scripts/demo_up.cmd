@@ -21,7 +21,7 @@ if errorlevel 1 (
 
 echo.
 echo Seeding classroom demo data...
-docker compose -f docker-compose.demo.yml exec -T api python scripts/seed_demo.py
+docker compose -f docker-compose.demo.yml exec -T -e PYTHONPATH=/app api python scripts/seed_demo.py
 if errorlevel 1 goto :error
 
 echo.
