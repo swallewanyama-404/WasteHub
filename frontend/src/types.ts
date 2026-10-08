@@ -10,6 +10,11 @@ export interface User {
   full_name: string;
   email: string;
   role: UserRole;
+  client_type: string | null;
+  default_address: string | null;
+  default_latitude: number | null;
+  default_longitude: number | null;
+  collection_weekday: number;
   is_active: boolean;
 }
 
@@ -191,7 +196,8 @@ export interface Notification {
 export interface Payment {
   id: number;
   resident_id: number;
-  request_id: number;
+  request_id: number | null;
+  payment_type: "monthly_service" | "urgent_pickup";
   amount: string;
   currency: string;
   method: string;
@@ -358,4 +364,17 @@ export interface Zone {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+
+export interface ResidentServicePlan {
+  client_type: string;
+  default_waste_type: string;
+  collection_weekday: number;
+  collection_weekday_name: string;
+  next_collection_date: string;
+  monthly_fee_ugx: string;
+  urgent_pickup_fee_ugx: string;
+  month_paid: boolean;
+  collection_enabled: boolean;
 }
