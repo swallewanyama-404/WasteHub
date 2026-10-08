@@ -22,7 +22,7 @@ class PaymentGateway(Protocol):
         amount: Decimal,
         currency: str,
         method: str,
-        request_id: int,
+        request_id: int | None,
         resident_id: int,
     ) -> PaymentInitiation:
         ...
@@ -37,7 +37,7 @@ class DemoPaymentGateway:
         amount: Decimal,
         currency: str,
         method: str,
-        request_id: int,
+        request_id: int | None,
         resident_id: int,
     ) -> PaymentInitiation:
         return PaymentInitiation(
@@ -49,7 +49,6 @@ class DemoPaymentGateway:
 
 def get_payment_gateway() -> PaymentGateway:
     provider = settings.payment_provider.lower().strip()
-
     if provider == "demo":
         return DemoPaymentGateway()
 
