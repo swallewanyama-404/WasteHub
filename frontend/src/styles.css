@@ -2022,3 +2022,146 @@ textarea:focus {
   .auto-location-strip .text-button { grid-column: 2; justify-self: start; }
   .leaflet-map { height: 380px; }
 }
+
+
+/* Resident tracking */
+
+.tracking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, .55fr);
+  gap: 1rem;
+}
+
+.live-map-panel {
+  min-width: 0;
+}
+
+.tracking-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.tracking-timeline-panel {
+  grid-column: 1 / -1;
+}
+
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: .35rem .65rem;
+  border-radius: 999px;
+  color: #176a35;
+  background: #e2f6e4;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.map-helper {
+  margin: .85rem 0 0;
+  color: var(--wh-muted);
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+.tracking-status-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .9rem;
+  align-items: center;
+  margin: .8rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid #dce9dd;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f4fbf3, #edf8ee);
+}
+
+.tracking-truck-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  color: #fff;
+  background: var(--wh-green-800);
+  font-size: 1.8rem;
+}
+
+.tracking-status-hero strong {
+  display: block;
+}
+
+.tracking-status-hero p {
+  margin: .35rem 0 0;
+  font-size: .78rem;
+}
+
+.tracking-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .65rem;
+}
+
+.tracking-mini-grid > div {
+  padding: .8rem;
+  border: 1px solid var(--wh-border);
+  border-radius: .8rem;
+  background: #fafcf9;
+}
+
+.tracking-mini-grid span,
+.tracking-mini-grid strong {
+  display: block;
+}
+
+.tracking-mini-grid span {
+  color: var(--wh-muted);
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+.tracking-mini-grid strong {
+  margin-top: .3rem;
+  font-size: .86rem;
+  text-transform: capitalize;
+}
+
+.pickup-address-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .75rem;
+  align-items: center;
+}
+
+.pickup-address-card > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: .8rem;
+  color: white;
+  background: #5a45b7;
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.pickup-address-card p {
+  margin: .25rem 0 0;
+  color: var(--wh-muted);
+  font-size: .8rem;
+}
+
+.request-selector-panel {
+  border-color: #d9e8da;
+}
+
+@media (max-width: 1020px) {
+  .tracking-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tracking-timeline-panel {
+    grid-column: auto;
+  }
+}
