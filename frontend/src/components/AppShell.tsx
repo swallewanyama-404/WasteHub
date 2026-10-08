@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { WasteHubLogo } from "./WasteHubLogo";
 import { WorkspaceNav } from "./WorkspaceNav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -14,22 +15,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <NavLink to={home} className="brand" aria-label="WasteHub home">
-            WasteHub
-          </NavLink>
-          <span className="role-chip">{user?.role.replaceAll("_", " ")}</span>
+      <aside className="app-sidebar">
+        <WasteHubLogo to={home} />
+        <WorkspaceNav />
+        <div className="sidebar-message">
+          <span>♻</span>
+          <strong>Cleaner communities</strong>
+          <p>Smarter collection, clearer service.</p>
         </div>
-        <div className="topbar-user">
-          <span>{user?.full_name}</span>
-          <button className="button secondary" onClick={logout}>
-            Sign out
-          </button>
-        </div>
-      </header>
-      <WorkspaceNav />
-      <main className="page-shell">{children}</main>
+      </aside>
+
+      <div className="app-main">
+        <header className="topbar">
+          <div className="topbar-context">
+            <span className="role-chip">{user?.role.replaceAll("_", " ")}</span>
+          </div>
+          <div className="topbar-user">
+            <div className="avatar">{user?.full_name?.slice(0, 1).toUpperCase()}</div>
+            <div>
+              <strong>{user?.full_name}</strong>
+              <span>{user?.email}</span>
+            </div>
+            <button className="button ghost compact-button" onClick={logout}>Sign out</button>
+          </div>
+        </header>
+
+        <main className="page-shell">{children}</main>
+      </div>
     </div>
   );
 }
