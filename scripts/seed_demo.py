@@ -135,6 +135,12 @@ def main():
         collector = users["collector"]
         admin = users["system_admin"]
 
+        resident.client_type = "household"
+        resident.default_address = "Demo Home - Ntinda, Kampala"
+        resident.default_latitude = 0.3797000
+        resident.default_longitude = 32.6129000
+        resident.collection_weekday = 0
+
         request = db.scalar(
             select(CollectionRequest).where(
                 CollectionRequest.resident_id == resident.id,
@@ -145,7 +151,7 @@ def main():
         if request is None:
             request = CollectionRequest(
                 resident_id=resident.id,
-                request_type=CollectionRequestType.ON_DEMAND,
+                request_type=CollectionRequestType.ROUTINE,
                 priority=CollectionRequestPriority.HIGH,
                 status=CollectionRequestStatus.SCHEDULED,
                 pickup_address="Demo Home - Ntinda, Kampala",
@@ -154,7 +160,7 @@ def main():
                 waste_type="Household waste",
                 quantity_estimate=25,
                 quantity_unit="kg",
-                reason="Class demonstration pickup",
+                reason="Routine weekly classroom demonstration pickup",
                 scheduled_at=datetime.now(timezone.utc) + timedelta(hours=1),
             )
             db.add(request)
