@@ -1,7 +1,7 @@
 """resident profiles and service billing
 
 Revision ID: d41b7c2e9f10
-Revises: 8f2c9a1d7b44
+Revises: 9c4f7a2d1e90
 Create Date: 2026-10-08
 """
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision: str = "d41b7c2e9f10"
-down_revision: Union[str, Sequence[str], None] = "8f2c9a1d7b44"
+down_revision: Union[str, Sequence[str], None] = "9c4f7a2d1e90"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
