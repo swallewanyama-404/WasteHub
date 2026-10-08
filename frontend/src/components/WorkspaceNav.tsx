@@ -1,9 +1,21 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
+const icons: Record<string, string> = {
+  Requests: "⌂",
+  Tracking: "⌖",
+  Payments: "▣",
+  Support: "?",
+  Queue: "☷",
+  "Route map": "⌖",
+  Dashboard: "⌂",
+  Dispatch: "➜",
+  Monitoring: "◉",
+  "Service desk": "☰",
+};
+
 export function WorkspaceNav() {
   const { user } = useAuth();
-
   if (!user) return null;
 
   const links =
@@ -15,10 +27,7 @@ export function WorkspaceNav() {
           ["/resident/support", "Support"],
         ]
       : user.role === "collector"
-        ? [
-            ["/collector", "Queue"],
-            ["/collector/map", "Route map"],
-          ]
+        ? [["/collector", "Queue"], ["/collector/map", "Route map"]]
         : [
             ["/organization", "Dashboard"],
             ["/organization/dispatch", "Dispatch"],
@@ -33,11 +42,10 @@ export function WorkspaceNav() {
           key={to}
           to={to}
           end={to === "/resident" || to === "/collector" || to === "/organization"}
-          className={({ isActive }) =>
-            isActive ? "workspace-link active" : "workspace-link"
-          }
+          className={({ isActive }) => isActive ? "workspace-link active" : "workspace-link"}
         >
-          {label}
+          <span className="workspace-icon" aria-hidden="true">{icons[label]}</span>
+          <span>{label}</span>
         </NavLink>
       ))}
     </nav>
