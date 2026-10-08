@@ -232,8 +232,8 @@ export function ResidentDashboardPage() {
           <span className="card-label">Saved service location</span>
           <strong>{profile?.default_address || "Location not saved"}</strong>
           <p className="muted">
-            {profile?.default_latitude !== null && profile?.default_longitude !== null
-              ? `${Number(profile?.default_latitude).toFixed(5)}, ${Number(profile?.default_longitude).toFixed(5)}`
+            {profile?.default_latitude != null && profile?.default_longitude != null
+              ? `${Number(profile.default_latitude).toFixed(5)}, ${Number(profile.default_longitude).toFixed(5)}`
               : "GPS coordinates missing"}
           </p>
         </article>
