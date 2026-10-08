@@ -57,7 +57,7 @@ def get_operations_queue(
             select(CollectionRequest)
             .where(
                 CollectionRequest.status.notin_(
-                    list(TERMINAL_REQUEST_STATUSES)
+                    list(TERMINAL_REQUEST_STATUSES) + [CollectionRequestStatus.PAYMENT_PENDING]
                 )
             )
             .order_by(
@@ -239,6 +239,12 @@ def dispatch_collection_request(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Collection request not found",
+        )
+
+    if collection_request.status == CollectionRequestStatus.PAYMENT_PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Urgent pickup payment must be completed before dispatch",
         )
 
     if (
