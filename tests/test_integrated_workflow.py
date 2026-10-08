@@ -18,6 +18,10 @@ def _register(email: str, password: str, full_name: str):
             "full_name": full_name,
             "email": email,
             "password": password,
+            "client_type": "household",
+            "default_address": "Integration Test Home, Kampala",
+            "default_latitude": 0.3476,
+            "default_longitude": 32.5825,
         },
     )
     assert response.status_code == 201, response.text
@@ -116,6 +120,25 @@ def test_end_to_end_wastehub_workflow():
     )
     assert request_response.status_code == 201, request_response.text
     collection_request = request_response.json()
+    assert collection_request["status"] == "payment_pending"
+
+    urgent_payment_response = client.post(
+        "/api/v1/payments",
+        headers=_auth(resident_token),
+        json={
+            "payment_type": "urgent_pickup",
+            "request_id": collection_request["id"],
+            "method": "mobile_money",
+        },
+    )
+    assert urgent_payment_response.status_code == 201, urgent_payment_response.text
+    urgent_payment = urgent_payment_response.json()
+
+    urgent_payment_success = client.post(
+        f"/api/v1/payments/{urgent_payment['id']}/demo-success",
+        headers=_auth(resident_token),
+    )
+    assert urgent_payment_success.status_code == 200, urgent_payment_success.text
 
     dispatch_response = client.post(
         "/api/v1/organization-portal/dispatch",
@@ -209,14 +232,14 @@ def test_end_to_end_wastehub_workflow():
         "/api/v1/payments",
         headers=_auth(resident_token),
         json={
-            "request_id": collection_request["id"],
-            "amount": "5000",
+            "payment_type": "monthly_service",
             "method": "mobile_money",
         },
     )
     assert payment_response.status_code == 201, payment_response.text
     payment = payment_response.json()
     assert payment["status"] == "pending"
+    assert payment["payment_type"] == "monthly_service"
 
     payment_success_response = client.post(
         f"/api/v1/payments/{payment['id']}/demo-success",
@@ -224,6 +247,13 @@ def test_end_to_end_wastehub_workflow():
     )
     assert payment_success_response.status_code == 200, payment_success_response.text
     assert payment_success_response.json()["status"] == "succeeded"
+
+    service_plan_response = client.get(
+        "/api/v1/resident/service-plan",
+        headers=_auth(resident_token),
+    )
+    assert service_plan_response.status_code == 200, service_plan_response.text
+    assert service_plan_response.json()["month_paid"] is True
 
     complaint_response = client.post(
         "/api/v1/complaints",
