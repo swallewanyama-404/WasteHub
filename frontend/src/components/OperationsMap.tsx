@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
+import { divIcon } from "leaflet";
 import {
-  CircleMarker,
   MapContainer,
+  Marker,
   Polyline,
   Popup,
   TileLayer,
@@ -14,51 +16,117 @@ interface OperationsMapProps {
   pickup?: { latitude: number; longitude: number; label?: string } | null;
 }
 
+type LatLngTuple = [number, number];
+
+function markerIcon(kind: "truck" | "home", state = "upcoming") {
+  const label = kind === "truck" ? "🚛" : "⌂";
+  return divIcon({
+    className: "wastehub-div-icon",
+    html: `<div class="map-marker ${kind} ${state}"><span>${label}</span></div>`,
+    iconSize: [38, 44],
+    iconAnchor: [19, 40],
+    popupAnchor: [0, -38],
+  });
+}
+
 export function OperationsMap({
   stops = [],
   truck = null,
   pickup = null,
 }: OperationsMapProps) {
-  const stopPoints = stops
-    .filter(
-      (stop) =>
-        stop.pickup_latitude !== null && stop.pickup_longitude !== null,
-    )
-    .map((stop) => ({
-      latitude: stop.pickup_latitude as number,
-      longitude: stop.pickup_longitude as number,
-      stop,
-    }));
+  const [roadRoute, setRoadRoute] = useState<LatLngTuple[]>([]);
 
-  const fallback = {
-    latitude: 0.3476,
-    longitude: 32.5825,
-  };
+  const stopPoints = useMemo(
+    () =>
+      stops
+        .filter((stop) => stop.pickup_latitude !== null && stop.pickup_longitude !== null)
+        .map((stop) => ({
+          latitude: stop.pickup_latitude as number,
+          longitude: stop.pickup_longitude as number,
+          stop,
+        })),
+    [stops],
+  );
 
+  const fallback = { latitude: 0.3476, longitude: 32.5825 };
   const center =
     truck ??
     pickup ??
     (stopPoints.length
-      ? {
-          latitude: stopPoints[0].latitude,
-          longitude: stopPoints[0].longitude,
-        }
+      ? { latitude: stopPoints[0].latitude, longitude: stopPoints[0].longitude }
       : fallback);
 
-  const linePoints: [number, number][] = stopPoints.map((point) => [
-    point.latitude,
-    point.longitude,
-  ]);
+  const routeWaypoints = useMemo(() => {
+    const points: { latitude: number; longitude: number }[] = [];
+    if (truck) points.push(truck);
 
-  if (truck) {
-    linePoints.unshift([truck.latitude, truck.longitude]);
+    if (stopPoints.length) {
+      points.push(
+        ...stopPoints.map((point) => ({
+          latitude: point.latitude,
+          longitude: point.longitude,
+        })),
+      );
+    } else if (pickup) {
+      points.push(pickup);
+    }
+
+    return points;
+  }, [truck, pickup, stopPoints]);
+
+  useEffect(() => {
+    if (routeWaypoints.length < 2) {
+      setRoadRoute([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const coordinates = routeWaypoints
+      .map((point) => `${point.longitude},${point.latitude}`)
+      .join(";");
+
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`,
+      { signal: controller.signal },
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error("Routing service unavailable");
+        return response.json();
+      })
+      .then((data) => {
+        const coordinatesList = data?.routes?.[0]?.geometry?.coordinates;
+        if (!Array.isArray(coordinatesList)) throw new Error("No road route");
+        setRoadRoute(
+          coordinatesList.map(([longitude, latitude]: [number, number]) => [
+            latitude,
+            longitude,
+          ]),
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setRoadRoute(
+            routeWaypoints.map((point) => [point.latitude, point.longitude]),
+          );
+        }
+      });
+
+    return () => controller.abort();
+  }, [routeWaypoints]);
+
+  function stateForStop(stop: CollectorMapStop) {
+    if (stop.map_state === "completed") return "completed";
+    if (stop.map_state === "missed") return "missed";
+    if (stop.is_next_stop) return "next";
+    if (stop.map_state === "rejected" || stop.map_state === "cancelled") return "closed";
+    return "upcoming";
   }
 
   return (
     <div className="map-frame" aria-label="WasteHub operations map">
       <MapContainer
         center={[center.latitude, center.longitude]}
-        zoom={13}
+        zoom={14}
         scrollWheelZoom
         className="leaflet-map"
       >
@@ -67,55 +135,58 @@ export function OperationsMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {linePoints.length > 1 ? <Polyline positions={linePoints} /> : null}
+        {roadRoute.length > 1 ? (
+          <Polyline
+            positions={roadRoute}
+            pathOptions={{ color: "#12823b", weight: 5, opacity: 0.88 }}
+          />
+        ) : null}
 
-        {stopPoints.map(({ latitude, longitude, stop }) => (
-          <CircleMarker
-            key={stop.assignment_id}
-            center={[latitude, longitude]}
-            radius={stop.is_next_stop ? 10 : 7}
-            pathOptions={{
-              color:
-                stop.map_state === "completed"
-                  ? "#0f766e"
-                  : stop.map_state === "missed"
-                    ? "#b45309"
-                    : stop.map_state === "rejected" ||
-                        stop.map_state === "cancelled"
-                      ? "#6b7280"
-                      : "#dc2626",
-            }}
-          >
-            <Popup>
-              <strong>{stop.pickup_address}</strong>
-              <br />
-              Assignment #{stop.assignment_id}
-              <br />
-              {stop.assignment_status}
-            </Popup>
-          </CircleMarker>
-        ))}
+        {stopPoints.map(({ latitude, longitude, stop }) => {
+          const state = stateForStop(stop);
+          return (
+            <Marker
+              key={stop.assignment_id}
+              position={[latitude, longitude]}
+              icon={markerIcon("home", state)}
+            >
+              <Popup>
+                <strong>{stop.pickup_address}</strong>
+                <br />
+                Assignment #{stop.assignment_id}
+                <br />
+                {state === "next" ? "Next collection stop" : stop.assignment_status}
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {pickup ? (
-          <CircleMarker
-            center={[pickup.latitude, pickup.longitude]}
-            radius={9}
-            pathOptions={{ color: "#7c3aed" }}
+          <Marker
+            position={[pickup.latitude, pickup.longitude]}
+            icon={markerIcon("home", "resident")}
           >
-            <Popup>{pickup.label ?? "Pickup location"}</Popup>
-          </CircleMarker>
+            <Popup>{pickup.label ?? "Your pickup location"}</Popup>
+          </Marker>
         ) : null}
 
         {truck ? (
-          <CircleMarker
-            center={[truck.latitude, truck.longitude]}
-            radius={11}
-            pathOptions={{ color: "#2563eb" }}
+          <Marker
+            position={[truck.latitude, truck.longitude]}
+            icon={markerIcon("truck", "live")}
           >
             <Popup>{truck.label ?? "Collection vehicle"}</Popup>
-          </CircleMarker>
+          </Marker>
         ) : null}
       </MapContainer>
+
+      <div className="map-legend" aria-label="Map legend">
+        <span><i className="legend-home completed">⌂</i> Completed</span>
+        <span><i className="legend-home next">⌂</i> Next stop</span>
+        <span><i className="legend-home upcoming">⌂</i> Upcoming</span>
+        <span><i className="legend-home missed">⌂</i> Missed</span>
+        <span><i className="legend-route" /> Road route</span>
+      </div>
     </div>
   );
 }
