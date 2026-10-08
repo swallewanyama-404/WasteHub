@@ -61,8 +61,12 @@ export function OperationsMap({
     if (truck) points.push(truck);
 
     if (stopPoints.length) {
+      const activeStops = stopPoints.filter(
+        ({ stop }) =>
+          !["completed", "missed", "rejected", "cancelled"].includes(stop.map_state),
+      );
       points.push(
-        ...stopPoints.map((point) => ({
+        ...(activeStops.length ? activeStops : stopPoints).map((point) => ({
           latitude: point.latitude,
           longitude: point.longitude,
         })),
