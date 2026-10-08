@@ -5,8 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaymentCreate(BaseModel):
-    request_id: int
-    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    payment_type: str = Field(default="urgent_pickup", pattern="^(monthly_service|urgent_pickup)$")
+    request_id: int | None = None
     method: str = Field(pattern="^(mobile_money|card|cash)$")
 
 
@@ -15,7 +15,8 @@ class PaymentResponse(BaseModel):
 
     id: int
     resident_id: int
-    request_id: int
+    request_id: int | None
+    payment_type: str
     amount: Decimal
     currency: str
     method: str
