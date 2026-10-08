@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { WasteHubLogo } from "../components/WasteHubLogo";
 import { ApiError } from "../lib/api";
 
 export function LoginPage() {
@@ -18,98 +19,101 @@ export function LoginPage() {
     ["Administrator", "admin@wastehub.demo", "WasteHubAdmin123!"],
   ] as const;
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    const home =
+      user.role === "resident"
+        ? "/resident"
+        : user.role === "collector"
+          ? "/collector"
+          : "/organization";
+    return <Navigate to={home} replace />;
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
     setSubmitting(true);
-
     try {
       await login(email, password);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Unable to sign in. Please try again.",
-      );
+      setError(err instanceof ApiError ? err.message : "Unable to sign in. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="login-title">
+    <main className="auth-layout">
+      <section className="auth-brand-panel login-brand-panel">
+        <WasteHubLogo />
         <div>
-          <p className="eyebrow">WasteHub</p>
-          <h1 id="login-title">Sign in</h1>
-          <p className="muted">
-            Access your resident, collector, or operations workspace.
+          <p className="eyebrow">Connected waste services</p>
+          <h1>One platform. A clear view of every collection.</h1>
+          <p>
+            Residents, collectors and operations teams each get the tools they
+            need without losing the shared service picture.
           </p>
         </div>
+        <div className="auth-benefits">
+          <span>✓ GPS-enabled operations</span>
+          <span>✓ Digital service records</span>
+          <span>✓ Role-based workspaces</span>
+        </div>
+      </section>
 
-        {demoMode ? (
-          <div className="demo-login-box">
-            <strong>Classroom demo accounts</strong>
-            <p className="muted">
-              Choose a role to fill the seeded demo credentials.
-            </p>
-            <div className="button-row">
-              {demoAccounts.map(([label, demoEmail, demoPassword]) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  className="button secondary"
-                  onClick={() => {
-                    setEmail(demoEmail);
-                    setPassword(demoPassword);
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+      <section className="auth-form-panel">
+        <section className="auth-card" aria-labelledby="login-title">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Welcome back</p>
+              <h1 id="login-title">Sign in to WasteHub</h1>
             </div>
+            <Link className="text-link" to="/">Home</Link>
           </div>
-        ) : null}
 
-        <form onSubmit={handleSubmit} className="form-stack">
-          <label>
-            Email
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-
-          {error ? (
-            <div className="error-banner" role="alert">
-              {error}
+          {demoMode ? (
+            <div className="demo-login-box">
+              <strong>Classroom demo accounts</strong>
+              <p className="muted">Choose a role to fill the seeded credentials.</p>
+              <div className="button-row">
+                {demoAccounts.map(([label, demoEmail, demoPassword]) => (
+                  <button
+                    key={demoEmail}
+                    type="button"
+                    className="button secondary"
+                    onClick={() => {
+                      setEmail(demoEmail);
+                      setPassword(demoPassword);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
 
-          <button className="button primary" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="form-stack">
+            <label>
+              Email
+              <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>
+              Password
+              <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </label>
 
-        <p className="muted auth-footer">
-          New resident? <Link to="/register">Create resident account</Link>
-        </p>
+            {error ? <div className="error-banner" role="alert">{error}</div> : null}
+
+            <button className="button primary large" disabled={submitting}>
+              {submitting ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <p className="muted auth-footer">
+            New resident? <Link to="/register">Create resident account</Link>
+          </p>
+        </section>
       </section>
     </main>
   );
