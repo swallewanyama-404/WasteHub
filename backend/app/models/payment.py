@@ -16,9 +16,15 @@ class Payment(Base):
         nullable=False,
         index=True,
     )
-    request_id: Mapped[int] = mapped_column(
+    request_id: Mapped[int | None] = mapped_column(
         ForeignKey("collection_requests.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    payment_type: Mapped[str] = mapped_column(
+        String(40),
         nullable=False,
+        default="urgent_pickup",
         index=True,
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
@@ -31,14 +37,8 @@ class Payment(Base):
     failure_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-        index=True,
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
