@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.security import hash_password
 from backend.app.models.provider import ServiceProvider
+from backend.app.models.provider_zone import ProviderZone
 from backend.app.models.user import User, UserRole
 from backend.app.models.vehicle import Vehicle, VehicleStatus
 from backend.app.models.zone import Zone
@@ -168,3 +169,30 @@ def update_fleet_vehicle_status(
     db.commit()
     db.refresh(vehicle)
     return vehicle
+
+
+
+def list_service_zones(db: Session, supervisor: User) -> list[Zone]:
+    provider_id = _provider_id(supervisor)
+    zone_ids = list(
+        db.scalars(
+            select(ProviderZone.zone_id)
+            .where(
+                ProviderZone.provider_id == provider_id,
+                ProviderZone.is_active.is_(True),
+            )
+            .order_by(ProviderZone.zone_id.asc())
+        ).all()
+    )
+    if not zone_ids:
+        return []
+    return list(
+        db.scalars(
+            select(Zone)
+            .where(
+                Zone.id.in_(zone_ids),
+                Zone.is_active.is_(True),
+            )
+            .order_by(Zone.name.asc())
+        ).all()
+    )
