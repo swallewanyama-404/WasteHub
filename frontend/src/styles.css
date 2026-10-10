@@ -584,8 +584,7 @@ a:focus-visible {
 }
 
 
-.location-box,
-.demo-login-box {
+.location-box {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -596,13 +595,8 @@ a:focus-visible {
   border: 1px solid #dce9e6;
 }
 
-.location-box p,
-.demo-login-box p {
+.location-box p {
   margin: 0.25rem 0 0;
-}
-
-.demo-login-box {
-  display: block;
 }
 
 @media (max-width: 640px) {
