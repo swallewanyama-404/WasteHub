@@ -16,6 +16,7 @@ export interface User {
   default_longitude: number | null;
   collection_weekday: number;
   is_active: boolean;
+  created_at?: string;
 }
 
 export interface TokenResponse {
