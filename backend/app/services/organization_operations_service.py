@@ -83,6 +83,14 @@ def get_operations_queue(db: Session, actor: User) -> list[OperationsQueueItemRe
 
         resident = db.get(User, collection_request.resident_id)
 
+        if (
+            actor.role == UserRole.SUPERVISOR
+            and resident is not None
+            and resident.provider_id is not None
+            and resident.provider_id != actor.provider_id
+        ):
+            continue
+
         results.append(
             OperationsQueueItemResponse(
                 request_id=collection_request.id,
@@ -200,6 +208,17 @@ def dispatch_collection_request(
     if not provider_serves_zone(db, provider.id, collection_request.zone_id):
         raise HTTPException(status_code=409, detail="This provider does not operate in the collection request's zone")
 
+    resident = db.get(User, collection_request.resident_id)
+    if (
+        resident is not None
+        and resident.provider_id is not None
+        and resident.provider_id != provider.id
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="This resident is currently served by another approved provider",
+        )
+
     collector = db.get(User, data.collector_id)
     if collector is None:
         raise HTTPException(status_code=404, detail="Collector not found")
@@ -232,6 +251,9 @@ def dispatch_collection_request(
     )
     if existing_assignment is not None:
         raise HTTPException(status_code=409, detail="Collection request already has an active assignment")
+
+    if resident is not None and resident.provider_id is None:
+        resident.provider_id = provider.id
 
     assignment = CollectionAssignment(
         request_id=data.request_id,
