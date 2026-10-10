@@ -10,14 +10,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const demoMode = import.meta.env.VITE_DEMO_MODE === "true";
-
-  const demoAccounts = [
-    ["Resident", "resident@wastehub.demo", "WasteHubResident123!"],
-    ["Collector", "collector@wastehub.demo", "WasteHubCollector123!"],
-    ["Supervisor", "supervisor@wastehub.demo", "WasteHubSupervisor123!"],
-    ["Administrator", "admin@wastehub.demo", "WasteHubAdmin123!"],
-  ] as const;
 
   if (user) {
     const home =
@@ -73,27 +65,6 @@ export function LoginPage() {
             <Link className="text-link" to="/">Home</Link>
           </div>
 
-          {demoMode ? (
-            <div className="demo-login-box">
-              <strong>Classroom demo accounts</strong>
-              <p className="muted">Choose a role to fill the seeded credentials.</p>
-              <div className="button-row">
-                {demoAccounts.map(([label, demoEmail, demoPassword]) => (
-                  <button
-                    key={demoEmail}
-                    type="button"
-                    className="button secondary"
-                    onClick={() => {
-                      setEmail(demoEmail);
-                      setPassword(demoPassword);
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           <form onSubmit={handleSubmit} className="form-stack">
             <label>
