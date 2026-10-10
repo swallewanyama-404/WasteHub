@@ -1,11 +1,11 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { StatePanel } from "../components/StatePanel";
 import { apiRequest, ApiError } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import type {
   CollectorAssignment,
-  CollectorDashboard,
   Evidence,
   RouteProgress,
   TrackingSession,
@@ -28,16 +28,23 @@ function getBrowserPosition(): Promise<GeolocationPosition> {
   });
 }
 
+type NoteAction = {
+  assignmentId: number;
+  kind: "reject" | "miss";
+} | null;
+
 export function CollectorDashboardPage() {
   const { token } = useAuth();
-  const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
   const [queue, setQueue] = useState<CollectorAssignment[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [sessions, setSessions] = useState<TrackingSession[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [dialog, setDialog] = useState<NoteAction>(null);
+  const [dialogNote, setDialogNote] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const availableVehicles = useMemo(
     () =>
@@ -62,30 +69,28 @@ export function CollectorDashboardPage() {
     setError("");
 
     try {
-      const [dashboardData, queueData, vehicleData, sessionData] =
-        await Promise.all([
-          apiRequest<CollectorDashboard>("/collector/dashboard", {}, token),
-          apiRequest<CollectorAssignment[]>("/collector/queue", {}, token),
-          apiRequest<Vehicle[]>("/vehicles", {}, token),
-          apiRequest<TrackingSession[]>("/tracking/sessions/mine/active", {}, token),
-        ]);
+      const [queueData, vehicleData, sessionData] = await Promise.all([
+        apiRequest<CollectorAssignment[]>("/collector/queue", {}, token),
+        apiRequest<Vehicle[]>("/vehicles", {}, token),
+        apiRequest<TrackingSession[]>("/tracking/sessions/mine/active", {}, token),
+      ]);
 
-      setDashboard(dashboardData);
       setQueue(queueData);
       setVehicles(vehicleData);
       setSessions(sessionData);
 
       if (!selectedVehicleId) {
-        const firstAvailable = vehicleData.find(
-          (vehicle) => vehicle.status === "available" && vehicle.is_active,
-        );
-        if (firstAvailable) setSelectedVehicleId(String(firstAvailable.id));
+        const activeSessionVehicle = sessionData[0]?.vehicle_id;
+        const firstVehicle =
+          vehicleData.find((vehicle) => vehicle.id === activeSessionVehicle) ??
+          vehicleData.find(
+            (vehicle) => vehicle.status === "available" && vehicle.is_active,
+          );
+        if (firstVehicle) setSelectedVehicleId(String(firstVehicle.id));
       }
     } catch (err) {
       setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not load the collector workspace.",
+        err instanceof ApiError ? err.message : "Could not load your work queue.",
       );
     } finally {
       setLoading(false);
@@ -99,12 +104,15 @@ export function CollectorDashboardPage() {
   async function runAction(
     assignmentId: number,
     action: () => Promise<unknown>,
+    successMessage?: string,
   ) {
     setBusyId(assignmentId);
     setError("");
+    setNotice("");
 
     try {
       await action();
+      if (successMessage) setNotice(successMessage);
       await load();
     } catch (err) {
       setError(
@@ -118,31 +126,18 @@ export function CollectorDashboardPage() {
   }
 
   function accept(assignmentId: number) {
-    return runAction(assignmentId, () =>
-      apiRequest(
-        `/collector/assignments/${assignmentId}/accept`,
-        {
-          method: "POST",
-          body: JSON.stringify({ notes: "Accepted from collector workspace" }),
-        },
-        token,
-      ),
-    );
-  }
-
-  function reject(assignmentId: number) {
-    const reason = window.prompt("Reason for rejecting this assignment:");
-    if (!reason?.trim()) return Promise.resolve();
-
-    return runAction(assignmentId, () =>
-      apiRequest(
-        `/collector/assignments/${assignmentId}/reject`,
-        {
-          method: "POST",
-          body: JSON.stringify({ reason }),
-        },
-        token,
-      ),
+    return runAction(
+      assignmentId,
+      () =>
+        apiRequest(
+          `/collector/assignments/${assignmentId}/accept`,
+          {
+            method: "POST",
+            body: JSON.stringify({ notes: "Accepted from collector workspace" }),
+          },
+          token,
+        ),
+      "Assignment accepted.",
     );
   }
 
@@ -152,18 +147,21 @@ export function CollectorDashboardPage() {
       return Promise.resolve();
     }
 
-    return runAction(assignmentId, () =>
-      apiRequest<TrackingSession>(
-        "/tracking/sessions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            assignment_id: assignmentId,
-            vehicle_id: Number(selectedVehicleId),
-          }),
-        },
-        token,
-      ),
+    return runAction(
+      assignmentId,
+      () =>
+        apiRequest<TrackingSession>(
+          "/tracking/sessions",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              assignment_id: assignmentId,
+              vehicle_id: Number(selectedVehicleId),
+            }),
+          },
+          token,
+        ),
+      "GPS tracking started.",
     );
   }
 
@@ -177,6 +175,7 @@ export function CollectorDashboardPage() {
 
     setBusyId(assignmentId);
     setError("");
+    setNotice("");
 
     try {
       const position = await getBrowserPosition();
@@ -199,6 +198,7 @@ export function CollectorDashboardPage() {
         token,
       );
 
+      setNotice("Current GPS position sent to WasteHub.");
       await load();
     } catch (err) {
       setError(
@@ -214,46 +214,75 @@ export function CollectorDashboardPage() {
   }
 
   function startCollection(assignmentId: number) {
-    return runAction(assignmentId, () =>
-      apiRequest<RouteProgress>(
-        `/operations-map/collector/stops/${assignmentId}/start`,
-        {
-          method: "POST",
-          body: JSON.stringify({ notes: "Collection started from collector workspace" }),
-        },
-        token,
-      ),
+    return runAction(
+      assignmentId,
+      () =>
+        apiRequest<RouteProgress>(
+          `/operations-map/collector/stops/${assignmentId}/start`,
+          {
+            method: "POST",
+            body: JSON.stringify({ notes: "Collection started from collector workspace" }),
+          },
+          token,
+        ),
+      "Collection started.",
     );
   }
 
   function completeCollection(assignmentId: number) {
-    return runAction(assignmentId, () =>
-      apiRequest<RouteProgress>(
-        `/operations-map/collector/stops/${assignmentId}/complete`,
-        {
-          method: "POST",
-          body: JSON.stringify({ notes: "Waste collected successfully" }),
-        },
-        token,
-      ),
+    return runAction(
+      assignmentId,
+      () =>
+        apiRequest<RouteProgress>(
+          `/operations-map/collector/stops/${assignmentId}/complete`,
+          {
+            method: "POST",
+            body: JSON.stringify({ notes: "Waste collected successfully" }),
+          },
+          token,
+        ),
+      "Collection completed.",
     );
   }
 
-  function missCollection(assignmentId: number) {
-    const notes = window.prompt(
-      "Why was this collection missed? This note will be recorded.",
-    );
-    if (!notes?.trim()) return Promise.resolve();
+  async function submitDialog(event: FormEvent) {
+    event.preventDefault();
+    if (!dialog || !dialogNote.trim()) return;
 
-    return runAction(assignmentId, () =>
-      apiRequest<RouteProgress>(
-        `/operations-map/collector/stops/${assignmentId}/miss`,
-        {
-          method: "POST",
-          body: JSON.stringify({ notes }),
-        },
-        token,
-      ),
+    const note = dialogNote.trim();
+    const current = dialog;
+    setDialog(null);
+    setDialogNote("");
+
+    if (current.kind === "reject") {
+      await runAction(
+        current.assignmentId,
+        () =>
+          apiRequest(
+            `/collector/assignments/${current.assignmentId}/reject`,
+            {
+              method: "POST",
+              body: JSON.stringify({ reason: note }),
+            },
+            token,
+          ),
+        "Assignment returned to operations for reassignment.",
+      );
+      return;
+    }
+
+    await runAction(
+      current.assignmentId,
+      () =>
+        apiRequest<RouteProgress>(
+          `/operations-map/collector/stops/${current.assignmentId}/miss`,
+          {
+            method: "POST",
+            body: JSON.stringify({ notes: note }),
+          },
+          token,
+        ),
+      "Missed collection recorded.",
     );
   }
 
@@ -266,6 +295,7 @@ export function CollectorDashboardPage() {
 
     setBusyId(assignmentId);
     setError("");
+    setNotice("");
 
     try {
       const body = new FormData();
@@ -274,12 +304,10 @@ export function CollectorDashboardPage() {
 
       await apiRequest<Evidence>(
         `/evidence/assignments/${assignmentId}`,
-        {
-          method: "POST",
-          body,
-        },
+        { method: "POST", body },
         token,
       );
+      setNotice("Collection photo uploaded.");
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Could not upload collection evidence.",
@@ -290,141 +318,131 @@ export function CollectorDashboardPage() {
     }
   }
 
+  const selectedVehicle = vehicles.find(
+    (vehicle) => String(vehicle.id) === selectedVehicleId,
+  );
+
   return (
     <AppShell>
       <div className="page-header">
         <div>
-          <p className="eyebrow">Collector workspace</p>
-          <h1>Today's collection queue</h1>
+          <p className="eyebrow">Work queue</p>
+          <h1>Today's assigned collections</h1>
           <p className="muted">
-            Accept assignments, start GPS, update your position, record
-            collection progress, and attach photo evidence.
+            Work each stop in sequence: accept, start GPS, begin collection, add evidence and finish the job.
           </p>
         </div>
-        <button className="button secondary" onClick={() => void load()}>
-          Refresh
-        </button>
+        <div className="button-row page-header-actions">
+          <Link className="button secondary" to="/collector/map">Route map</Link>
+          <button className="button secondary" onClick={() => void load()}>Refresh</button>
+        </div>
       </div>
 
-      {dashboard ? (
-        <section className="metric-grid" aria-label="Collector workload summary">
-          {[
-            ["Pending", dashboard.pending_assignments],
-            ["Accepted", dashboard.accepted_assignments],
-            ["In progress", dashboard.in_progress_assignments],
-            ["Completed", dashboard.completed_assignments],
-            ["Missed", dashboard.missed_assignments],
-          ].map(([label, value]) => (
-            <article className="metric-card" key={String(label)}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </article>
-          ))}
-        </section>
-      ) : null}
+      {error ? <div className="error-banner">{error}</div> : null}
+      {notice ? <div className="success-banner">{notice}</div> : null}
 
-      <section className="panel compact-panel">
-        <label>
-          Vehicle for new GPS session
-          <select
-            value={selectedVehicleId}
-            onChange={(event) => setSelectedVehicleId(event.target.value)}
-          >
-            <option value="">Select an available vehicle</option>
-            {availableVehicles.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.registration_number} · {vehicle.vehicle_type} · {vehicle.status}
-              </option>
-            ))}
-          </select>
-        </label>
+      <section className="collector-vehicle-bar">
+        <div>
+          <span className="collector-vehicle-icon">🚛</span>
+          <div>
+            <span className="card-label">Vehicle for GPS tracking</span>
+            <strong>
+              {selectedVehicle
+                ? `${selectedVehicle.registration_number} · ${selectedVehicle.vehicle_type}`
+                : "Select a vehicle"}
+            </strong>
+          </div>
+        </div>
+        <select
+          value={selectedVehicleId}
+          onChange={(event) => setSelectedVehicleId(event.target.value)}
+        >
+          <option value="">Select vehicle</option>
+          {availableVehicles.map((vehicle) => (
+            <option key={vehicle.id} value={vehicle.id}>
+              {vehicle.registration_number} · {vehicle.vehicle_type} · {vehicle.status}
+            </option>
+          ))}
+        </select>
       </section>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {loading ? (
+        <StatePanel title="Loading work queue…" />
+      ) : queue.length === 0 ? (
+        <StatePanel
+          title="No active assignments"
+          message="You're clear for now. New assignments from operations will appear here."
+        />
+      ) : (
+        <section className="collector-queue-stack">
+          {queue.map((assignment, index) => {
+            const session = sessionByAssignment[assignment.assignment_id];
+            const busy = busyId === assignment.assignment_id;
 
-      <section className="panel">
-        <h2>Assignments</h2>
+            return (
+              <article
+                className={index === 0 ? "collector-job-card next-job" : "collector-job-card"}
+                key={assignment.assignment_id}
+              >
+                <div className="collector-job-sequence">
+                  <span>{index + 1}</span>
+                  <i />
+                </div>
 
-        {loading ? (
-          <StatePanel title="Loading collector queue…" />
-        ) : queue.length === 0 ? (
-          <StatePanel
-            title="No active assignments"
-            message="New assignments from the operations team will appear here."
-          />
-        ) : (
-          <div className="list-stack">
-            {queue.map((assignment) => {
-              const session = sessionByAssignment[assignment.assignment_id];
-
-              return (
-                <article className="list-card" key={assignment.assignment_id}>
+                <div className="collector-job-content">
                   <div className="section-heading">
                     <div>
-                      <strong>Assignment #{assignment.assignment_id}</strong>
-                      <p>{assignment.pickup_address}</p>
+                      <p className="eyebrow">{index === 0 ? "Next stop" : "Queued stop"}</p>
+                      <h2>{assignment.pickup_address}</h2>
                     </div>
-                    <span className="status-badge">
-                      {assignment.assignment_status}
+                    <span className={`status-badge status-${assignment.assignment_status}`}>
+                      {assignment.assignment_status.replaceAll("_", " ")}
                     </span>
                   </div>
 
-                  <p className="muted">
-                    {assignment.waste_type} · {assignment.priority} priority
-                  </p>
+                  <div className="job-meta-grid">
+                    <div><span>Assignment</span><strong>#{assignment.assignment_id}</strong></div>
+                    <div><span>Waste</span><strong>{assignment.waste_type}</strong></div>
+                    <div><span>Priority</span><strong>{assignment.priority}</strong></div>
+                    <div>
+                      <span>GPS</span>
+                      <strong>{session ? `Active · #${session.id}` : "Not started"}</strong>
+                    </div>
+                  </div>
 
-                  {session ? (
-                    <p className="success-text">
-                      GPS session #{session.id} active on vehicle #{session.vehicle_id}
-                    </p>
-                  ) : null}
-
-                  <div className="button-row">
+                  <div className="job-action-row">
                     {assignment.assignment_status === "pending" ? (
                       <>
-                        <button
-                          className="button primary"
-                          disabled={busyId === assignment.assignment_id}
-                          onClick={() => void accept(assignment.assignment_id)}
-                        >
-                          Accept
+                        <button className="button primary" disabled={busy} onClick={() => void accept(assignment.assignment_id)}>
+                          Accept assignment
                         </button>
                         <button
-                          className="button danger"
-                          disabled={busyId === assignment.assignment_id}
-                          onClick={() => void reject(assignment.assignment_id)}
+                          className="button ghost danger-text"
+                          disabled={busy}
+                          onClick={() => {
+                            setDialog({ assignmentId: assignment.assignment_id, kind: "reject" });
+                            setDialogNote("");
+                          }}
                         >
-                          Reject
+                          Return assignment
                         </button>
                       </>
                     ) : null}
 
                     {assignment.assignment_status === "accepted" && !session ? (
-                      <button
-                        className="button secondary"
-                        disabled={busyId === assignment.assignment_id}
-                        onClick={() => void startTracking(assignment.assignment_id)}
-                      >
+                      <button className="button secondary" disabled={busy} onClick={() => void startTracking(assignment.assignment_id)}>
                         Start GPS
                       </button>
                     ) : null}
 
                     {session ? (
-                      <button
-                        className="button secondary"
-                        disabled={busyId === assignment.assignment_id}
-                        onClick={() => void sendLocation(assignment.assignment_id)}
-                      >
-                        Send current GPS
+                      <button className="button secondary" disabled={busy} onClick={() => void sendLocation(assignment.assignment_id)}>
+                        Update GPS
                       </button>
                     ) : null}
 
                     {assignment.assignment_status === "accepted" ? (
-                      <button
-                        className="button primary"
-                        disabled={busyId === assignment.assignment_id}
-                        onClick={() => void startCollection(assignment.assignment_id)}
-                      >
+                      <button className="button primary" disabled={busy} onClick={() => void startCollection(assignment.assignment_id)}>
                         Start collection
                       </button>
                     ) : null}
@@ -432,38 +450,74 @@ export function CollectorDashboardPage() {
                     {assignment.assignment_status === "in_progress" ? (
                       <>
                         <label className="button secondary upload-button">
-                          Upload photo
+                          Add photo evidence
                           <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
-                            onChange={(event) =>
-                              void uploadEvidence(assignment.assignment_id, event)
-                            }
+                            onChange={(event) => void uploadEvidence(assignment.assignment_id, event)}
                           />
                         </label>
-                        <button
-                          className="button primary"
-                          disabled={busyId === assignment.assignment_id}
-                          onClick={() => void completeCollection(assignment.assignment_id)}
-                        >
-                          Complete
+                        <button className="button primary" disabled={busy} onClick={() => void completeCollection(assignment.assignment_id)}>
+                          Complete collection
                         </button>
                         <button
-                          className="button danger"
-                          disabled={busyId === assignment.assignment_id}
-                          onClick={() => void missCollection(assignment.assignment_id)}
+                          className="button ghost danger-text"
+                          disabled={busy}
+                          onClick={() => {
+                            setDialog({ assignmentId: assignment.assignment_id, kind: "miss" });
+                            setDialogNote("");
+                          }}
                         >
                           Mark missed
                         </button>
                       </>
                     ) : null}
                   </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
+      {dialog ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setDialog(null)}>
+          <form
+            className="action-modal"
+            onSubmit={submitDialog}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="eyebrow">
+              {dialog.kind === "reject" ? "Return assignment" : "Missed collection"}
+            </p>
+            <h2>
+              {dialog.kind === "reject"
+                ? "Why can't you take this assignment?"
+                : "Why could this stop not be completed?"}
+            </h2>
+            <p className="muted">
+              This note becomes part of the operational record and helps the supervisor decide what happens next.
+            </p>
+            <label>
+              Reason
+              <textarea
+                autoFocus
+                rows={4}
+                required
+                minLength={2}
+                value={dialogNote}
+                onChange={(event) => setDialogNote(event.target.value)}
+              />
+            </label>
+            <div className="button-row modal-actions">
+              <button type="button" className="button secondary" onClick={() => setDialog(null)}>Cancel</button>
+              <button className={dialog.kind === "reject" ? "button danger" : "button primary"}>
+                Save reason
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </AppShell>
   );
 }
