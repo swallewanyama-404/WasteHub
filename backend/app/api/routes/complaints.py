@@ -5,11 +5,13 @@ from backend.app.core.dependencies import require_roles
 from backend.app.db.session import get_db
 from backend.app.models.user import User
 from backend.app.schemas.complaint import (
+    ComplaintClose,
     ComplaintCreate,
     ComplaintResponse,
     ComplaintUpdate,
 )
 from backend.app.services.complaint_feedback_service import (
+    close_complaint_by_resident,
     create_complaint,
     get_all_complaints,
     get_resident_complaints,
@@ -37,6 +39,21 @@ def my_complaints(
     return get_resident_complaints(db, current_user.id)
 
 
+@router.post("/{complaint_id}/close", response_model=ComplaintResponse)
+def close_my_complaint(
+    complaint_id: int,
+    data: ComplaintClose,
+    current_user: User = Depends(require_roles("resident")),
+    db: Session = Depends(get_db),
+):
+    return close_complaint_by_resident(
+        db,
+        complaint_id,
+        current_user,
+        data.confirmation,
+    )
+
+
 @router.get("", response_model=list[ComplaintResponse])
 def all_complaints(
     current_user: User = Depends(
@@ -44,7 +61,7 @@ def all_complaints(
     ),
     db: Session = Depends(get_db),
 ):
-    return get_all_complaints(db)
+    return get_all_complaints(db, current_user)
 
 
 @router.patch("/{complaint_id}", response_model=ComplaintResponse)
