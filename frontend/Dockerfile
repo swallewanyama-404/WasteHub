@@ -14,9 +14,7 @@ COPY frontend/index.html ./index.html
 COPY frontend/src ./src
 
 ARG VITE_API_BASE_URL=/api/v1
-ARG VITE_DEMO_MODE=true
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ENV VITE_DEMO_MODE=$VITE_DEMO_MODE
 
 RUN npm run build
 
