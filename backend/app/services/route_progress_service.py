@@ -12,6 +12,7 @@ from backend.app.models.collection_event import (
     CollectionEvent,
     CollectionEventType,
 )
+from backend.app.models.collection_evidence import CollectionEvidence
 from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestStatus,
@@ -376,6 +377,20 @@ def complete_collection_stop(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Collection request not found",
+        )
+
+    evidence_id = db.scalar(
+        select(CollectionEvidence.id)
+        .where(
+            CollectionEvidence.assignment_id == assignment.id,
+            CollectionEvidence.evidence_type == "collection_photo",
+        )
+        .limit(1)
+    )
+    if evidence_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Upload at least one collection photo before completing this stop",
         )
 
     now = datetime.now(timezone.utc)
