@@ -1,4 +1,3 @@
-import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { WasteHubLogo } from "./WasteHubLogo";
 import { WorkspaceNav } from "./WorkspaceNav";
@@ -11,7 +10,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? "/resident"
       : user?.role === "collector"
         ? "/collector"
-        : "/organization";
+        : user?.role === "system_admin"
+          ? "/admin"
+          : "/organization";
 
   return (
     <div className="app-shell">
