@@ -16,6 +16,8 @@ from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestStatus,
 )
+from backend.app.models.user import User
+from backend.app.models.vehicle import Vehicle, VehicleStatus
 from backend.app.services.audit_service import record_audit
 from backend.app.services.notification_service import create_notification
 from backend.app.schemas.collector_workflow import (
