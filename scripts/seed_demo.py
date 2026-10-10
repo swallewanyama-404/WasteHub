@@ -210,6 +210,7 @@ def main():
         resident.default_longitude = 32.6129000
         resident.collection_weekday = 0
         resident.zone_id = zone.id
+        resident.provider_id = provider.id
 
         primary_vehicle = ensure_vehicle(db, provider.id, zone.id, "UWH-DEMO")
         relief_vehicle = ensure_vehicle(db, provider.id, zone.id, "UWH-DEMO2")
