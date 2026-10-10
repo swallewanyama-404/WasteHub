@@ -11,6 +11,7 @@ export function OrganizationFleetPage() {
   const [zones, setZones] = useState<Zone[]>([]);
   const [registration, setRegistration] = useState("");
   const [vehicleType, setVehicleType] = useState("Waste Collection Truck");
+  const [capacityTons, setCapacityTons] = useState("5");
   const [zoneId, setZoneId] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -55,6 +56,7 @@ export function OrganizationFleetPage() {
             zone_id: Number(zoneId),
             registration_number: registration,
             vehicle_type: vehicleType,
+            capacity_tons: Number(capacityTons),
           }),
         },
         token,
@@ -121,6 +123,10 @@ export function OrganizationFleetPage() {
               <input required value={vehicleType} onChange={(event) => setVehicleType(event.target.value)} />
             </label>
             <label>
+              Capacity (tons)
+              <input required type="number" min="5" step="0.1" value={capacityTons} onChange={(event) => setCapacityTons(event.target.value)} />
+            </label>
+            <label>
               Operating zone
               <select required value={zoneId} onChange={(event) => setZoneId(event.target.value)}>
                 <option value="">Select zone</option>
@@ -154,7 +160,7 @@ export function OrganizationFleetPage() {
                   <span className="fleet-truck-icon">🚛</span>
                   <div>
                     <strong>{vehicle.registration_number}</strong>
-                    <p>{vehicle.vehicle_type} · zone {vehicle.zone_id ?? "not assigned"}</p>
+                    <p>{vehicle.vehicle_type} · {vehicle.capacity_tons ?? "—"} tons · zone {vehicle.zone_id ?? "not assigned"}</p>
                   </div>
                   <label>
                     Status
