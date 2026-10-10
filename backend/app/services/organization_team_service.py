@@ -74,6 +74,9 @@ def create_collector(
         entity_id=collector.id,
         details={"provider_id": provider_id, "zone_id": data.zone_id},
     )
+    db.flush()
+    from backend.app.services.automatic_routing_service import run_routine_auto_dispatch
+    run_routine_auto_dispatch(db)
     db.commit()
     db.refresh(collector)
     return collector
@@ -129,6 +132,9 @@ def create_fleet_vehicle(
         entity_id=vehicle.id,
         details={"provider_id": provider_id, "zone_id": data.zone_id},
     )
+    db.flush()
+    from backend.app.services.automatic_routing_service import run_routine_auto_dispatch
+    run_routine_auto_dispatch(db)
     db.commit()
     db.refresh(vehicle)
     return vehicle
