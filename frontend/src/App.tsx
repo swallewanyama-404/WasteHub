@@ -23,6 +23,7 @@ import { OrganizationFleetPage } from "./pages/OrganizationFleetPage";
 import { AdminOverviewPage } from "./pages/AdminOverviewPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
 import { AdminOrganizationsPage } from "./pages/AdminOrganizationsPage";
+import { AdminZonesPage } from "./pages/AdminZonesPage";
 import { AdminAuditPage } from "./pages/AdminAuditPage";
 
 export function App() {
@@ -55,6 +56,7 @@ export function App() {
       <Route path="/admin" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminOverviewPage /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminUsersPage /></ProtectedRoute>} />
       <Route path="/admin/organizations" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminOrganizationsPage /></ProtectedRoute>} />
+      <Route path="/admin/zones" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminZonesPage /></ProtectedRoute>} />
       <Route path="/admin/audit" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminAuditPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
