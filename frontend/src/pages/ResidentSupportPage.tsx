@@ -92,6 +92,29 @@ export function ResidentSupportPage() {
     }
   }
 
+  async function closeComplaint(complaintId: number) {
+    setBusy(true);
+    setError("");
+
+    try {
+      await apiRequest<Complaint>(
+        `/complaints/${complaintId}/close`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            confirmation: "Resident confirmed the reported service issue has been addressed.",
+          }),
+        },
+        token,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not close the complaint.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitFeedback(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -291,6 +314,26 @@ export function ResidentSupportPage() {
                     <strong>Resolution</strong>
                     <p>{complaint.resolution}</p>
                   </div>
+                ) : null}
+                {complaint.status === "resolved" ? (
+                  <div className="resident-case-confirmation">
+                    <p>
+                      The service team has marked this case resolved. Close it only after you have confirmed the issue was actually fixed.
+                    </p>
+                    <button
+                      className="button primary"
+                      disabled={busy}
+                      onClick={() => void closeComplaint(complaint.id)}
+                    >
+                      Confirm fixed & close case
+                    </button>
+                  </div>
+                ) : null}
+                {complaint.status === "in_review" ? (
+                  <p className="case-progress-note">Operations is investigating this case.</p>
+                ) : null}
+                {complaint.status === "closed" ? (
+                  <p className="success-text">You confirmed this case is closed.</p>
                 ) : null}
               </article>
             ))}
