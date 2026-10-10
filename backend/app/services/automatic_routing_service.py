@@ -139,10 +139,23 @@ def _select_collector(
     return compatible[0]
 
 
+def _request_required_tons(request: CollectionRequest) -> float | None:
+    if request.quantity_estimate is None or not request.quantity_unit:
+        return None
+    quantity = float(request.quantity_estimate)
+    unit = request.quantity_unit.strip().lower()
+    if unit in {"kg", "kilogram", "kilograms"}:
+        return quantity / 1000
+    if unit in {"ton", "tons", "tonne", "tonnes"}:
+        return quantity
+    return None
+
+
 def _select_vehicle(
     db: Session,
     provider_id: int,
     zone_id: int,
+    request: CollectionRequest,
 ) -> Vehicle | None:
     vehicles = list(
         db.scalars(
@@ -156,6 +169,21 @@ def _select_vehicle(
         ).all()
     )
     compatible = [vehicle for vehicle in vehicles if vehicle.zone_id in {None, zone_id}]
+    required_tons = _request_required_tons(request)
+    if required_tons is not None:
+        compatible = [
+            vehicle
+            for vehicle in compatible
+            if vehicle.capacity_tons is None or float(vehicle.capacity_tons) >= required_tons
+        ]
+
+    compatible.sort(
+        key=lambda vehicle: (
+            vehicle.capacity_tons is None,
+            float(vehicle.capacity_tons) if vehicle.capacity_tons is not None else 999999,
+            vehicle.id,
+        )
+    )
     return compatible[0] if compatible else None
 
 
@@ -208,7 +236,7 @@ def auto_assign_routine_request(
         return None
 
     collector = _select_collector(db, provider.id, request.zone_id)
-    vehicle = _select_vehicle(db, provider.id, request.zone_id)
+    vehicle = _select_vehicle(db, provider.id, request.zone_id, request)
     supervisor = _select_supervisor(db, provider.id)
 
     if collector is None or vehicle is None or supervisor is None:
