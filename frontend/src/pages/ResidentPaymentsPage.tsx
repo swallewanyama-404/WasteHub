@@ -13,6 +13,7 @@ export function ResidentPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,9 +40,10 @@ export function ResidentPaymentsPage() {
   async function payMonthly() {
     setBusy(true);
     setError("");
+    setNotice("");
 
     try {
-      await apiRequest<Payment>(
+      const payment = await apiRequest<Payment>(
         "/payments",
         {
           method: "POST",
@@ -52,6 +54,9 @@ export function ResidentPaymentsPage() {
         },
         token,
       );
+      setNotice(
+        `Payment request ${payment.external_reference} has been created. Service activates after the settlement is verified.`,
+      );
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start the monthly payment.");
@@ -60,28 +65,8 @@ export function ResidentPaymentsPage() {
     }
   }
 
-  async function completeDemo(paymentId: number) {
-    setBusy(true);
-    setError("");
-
-    try {
-      await apiRequest<Payment>(
-        `/payments/${paymentId}/demo-success`,
-        { method: "POST" },
-        token,
-      );
-      await load();
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Could not complete the demo payment.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const pendingUrgent = payments.filter(
-    (item) => item.payment_type === "urgent_pickup" && item.status !== "succeeded",
+  const pending = payments.filter((item) =>
+    ["pending", "processing"].includes(item.status),
   );
 
   return (
@@ -91,12 +76,13 @@ export function ResidentPaymentsPage() {
           <p className="eyebrow">Billing & payments</p>
           <h1>Payments</h1>
           <p className="muted">
-            Manage your monthly collection fee and complete any pending extra-pickup payment.
+            Manage the monthly routine-service fee and payments for extra pickups.
           </p>
         </div>
       </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
+      {notice ? <div className="success-banner">{notice}</div> : null}
 
       <section className="plan-card monthly-payment-card">
         <div className="section-heading">
@@ -116,7 +102,7 @@ export function ResidentPaymentsPage() {
               <span>/ month</span>
             </div>
             <p className="muted">
-              Covers your routine weekly collection for the current month.
+              Covers routine weekly collection for the current month.
             </p>
           </div>
 
@@ -131,7 +117,7 @@ export function ResidentPaymentsPage() {
                 </select>
               </label>
               <button className="button primary" disabled={busy} onClick={() => void payMonthly()}>
-                {busy ? "Starting payment…" : "Pay monthly fee"}
+                {busy ? "Starting payment…" : "Create payment request"}
               </button>
             </div>
           ) : (
@@ -146,28 +132,31 @@ export function ResidentPaymentsPage() {
         </div>
       </section>
 
-      {pendingUrgent.length > 0 ? (
+      {pending.length > 0 ? (
         <section className="panel attention-panel section-spacer">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Action required</p>
-              <h2>Pending pickup payment</h2>
+              <p className="eyebrow">Awaiting verification</p>
+              <h2>Pending settlements</h2>
             </div>
-            <span className="status-badge">{pendingUrgent.length} pending</span>
+            <span className="status-badge">{pending.length} pending</span>
           </div>
 
           <div className="list-stack">
-            {pendingUrgent.map((payment) => (
+            {pending.map((payment) => (
               <article className="payment-row" key={payment.id}>
                 <div>
-                  <strong>Extra pickup request #{payment.request_id}</strong>
+                  <strong>
+                    {payment.payment_type === "monthly_service"
+                      ? "Monthly collection service"
+                      : `Extra pickup #${payment.request_id}`}
+                  </strong>
                   <p className="muted">
                     {payment.currency} {Number(payment.amount).toLocaleString()} · {payment.method.replaceAll("_", " ")}
                   </p>
+                  <small className="code-text">{payment.external_reference}</small>
                 </div>
-                <button className="button accent" disabled={busy} onClick={() => void completeDemo(payment.id)}>
-                  Complete demo payment
-                </button>
+                <span className="status-badge status-pending">Awaiting verification</span>
               </article>
             ))}
           </div>
@@ -197,7 +186,6 @@ export function ResidentPaymentsPage() {
                   <th>Reference</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -209,15 +197,8 @@ export function ResidentPaymentsPage() {
                     <td>{payment.currency} {Number(payment.amount).toLocaleString()}</td>
                     <td>
                       <span className={`status-badge status-${payment.status}`}>
-                        {payment.status}
+                        {payment.status.replaceAll("_", " ")}
                       </span>
-                    </td>
-                    <td>
-                      {payment.status !== "succeeded" ? (
-                        <button className="button secondary" disabled={busy} onClick={() => void completeDemo(payment.id)}>
-                          Complete demo payment
-                        </button>
-                      ) : null}
                     </td>
                   </tr>
                 ))}
