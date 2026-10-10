@@ -14,6 +14,7 @@ interface OperationsMapProps {
   stops?: CollectorMapStop[];
   truck?: { latitude: number; longitude: number; label?: string } | null;
   pickup?: { latitude: number; longitude: number; label?: string } | null;
+  legendMode?: "operations" | "resident";
 }
 
 type LatLngTuple = [number, number];
@@ -33,6 +34,7 @@ export function OperationsMap({
   stops = [],
   truck = null,
   pickup = null,
+  legendMode = "operations",
 }: OperationsMapProps) {
   const [roadRoute, setRoadRoute] = useState<LatLngTuple[]>([]);
 
@@ -185,11 +187,20 @@ export function OperationsMap({
       </MapContainer>
 
       <div className="map-legend" aria-label="Map legend">
-        <span><i className="legend-home completed">⌂</i> Completed</span>
-        <span><i className="legend-home next">⌂</i> Next stop</span>
-        <span><i className="legend-home upcoming">⌂</i> Upcoming</span>
-        <span><i className="legend-home missed">⌂</i> Missed</span>
-        <span><i className="legend-route" /> Road route</span>
+        {legendMode === "resident" ? (
+          <>
+            <span><i className="legend-truck">🚛</i> Collection truck</span>
+            <span><i className="legend-route" /> Truck route</span>
+          </>
+        ) : (
+          <>
+            <span><i className="legend-home completed">⌂</i> Completed</span>
+            <span><i className="legend-home next">⌂</i> Next stop</span>
+            <span><i className="legend-home upcoming">⌂</i> Upcoming</span>
+            <span><i className="legend-home missed">⌂</i> Missed</span>
+            <span><i className="legend-route" /> Truck route</span>
+          </>
+        )}
       </div>
     </div>
   );
