@@ -10,6 +10,7 @@ class VehicleCreate(BaseModel):
     zone_id: int | None = None
     registration_number: str = Field(min_length=2, max_length=30)
     vehicle_type: str = Field(min_length=2, max_length=100)
+    capacity_tons: float = Field(default=5, ge=5, le=100)
     status: VehicleStatus = VehicleStatus.AVAILABLE
     is_active: bool = True
 
@@ -26,6 +27,7 @@ class VehicleResponse(BaseModel):
     zone_id: int | None
     registration_number: str
     vehicle_type: str
+    capacity_tons: float | None
     status: VehicleStatus
     is_active: bool
     created_at: datetime
