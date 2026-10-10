@@ -245,6 +245,11 @@ def _approve_application(
         details={"provider_id": provider.id, "zone_ids": application.requested_zone_ids},
     )
 
+    # Retry any routine collections that were waiting for an approved operator.
+    db.flush()
+    from backend.app.services.automatic_routing_service import run_routine_auto_dispatch
+    run_routine_auto_dispatch(db)
+
     db.commit()
     db.refresh(application)
     return application
