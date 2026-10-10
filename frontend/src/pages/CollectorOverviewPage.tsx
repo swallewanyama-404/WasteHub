@@ -88,7 +88,7 @@ export function CollectorOverviewPage() {
         <div>
           <p className="eyebrow">Collector dashboard</p>
           <h1>Good day, {user?.full_name?.split(" ")[0] ?? "Collector"}.</h1>
-          <p>See the next stop, shift progress and operational updates before you move.</p>
+          <p>See the next stop, active workload and operational updates before you move.</p>
         </div>
         <Link className="button primary" to="/collector/queue">Open work queue</Link>
       </section>
@@ -97,17 +97,17 @@ export function CollectorOverviewPage() {
 
       <section className="collector-stat-grid">
         <article className="collector-stat-card">
-          <span>Assigned today</span>
+          <span>Active assignments</span>
           <strong>{(dashboard?.pending_assignments ?? 0) + (dashboard?.accepted_assignments ?? 0) + (dashboard?.in_progress_assignments ?? 0)}</strong>
-          <small>Active work on your queue</small>
+          <small>Pending, accepted and in-progress work</small>
         </article>
         <article className="collector-stat-card">
-          <span>Completed</span>
+          <span>Completed total</span>
           <strong>{dashboard?.completed_assignments ?? 0}</strong>
           <small>Collections recorded</small>
         </article>
         <article className="collector-stat-card">
-          <span>Missed</span>
+          <span>Missed total</span>
           <strong>{dashboard?.missed_assignments ?? 0}</strong>
           <small>Needs operational review</small>
         </article>
