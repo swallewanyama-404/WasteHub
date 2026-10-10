@@ -25,6 +25,14 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
+function detailFromBody(body: unknown, status: number) {
+  return typeof body === "object" &&
+    body !== null &&
+    "detail" in body
+    ? String((body as { detail: unknown }).detail)
+    : `Request failed with status ${status}`;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
@@ -52,15 +60,25 @@ export async function apiRequest<T>(
   const body = await parseBody(response);
 
   if (!response.ok) {
-    const detail =
-      typeof body === "object" &&
-      body !== null &&
-      "detail" in body
-        ? String((body as { detail: unknown }).detail)
-        : `Request failed with status ${response.status}`;
-
-    throw new ApiError(detail, response.status, body);
+    throw new ApiError(detailFromBody(body, response.status), response.status, body);
   }
 
   return body as T;
+}
+
+export async function apiBlob(
+  path: string,
+  token?: string | null,
+): Promise<Blob> {
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+
+  if (!response.ok) {
+    const body = await parseBody(response);
+    throw new ApiError(detailFromBody(body, response.status), response.status, body);
+  }
+
+  return response.blob();
 }
