@@ -138,7 +138,7 @@ export function LandingPage() {
         <p>Smart waste collection for cleaner, better-connected communities.</p>
         <span>
           <Link className="footer-provider-link" to="/organization/register">Provider application</Link>
-          {" · "}WasteHub academic demonstration platform.
+
         </span>
       </footer>
     </main>
