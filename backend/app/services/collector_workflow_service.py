@@ -79,11 +79,16 @@ def _response(
             detail="Collection request not found",
         )
 
+    resident = db.get(User, request.resident_id)
+
     return CollectorAssignmentResponse(
         assignment_id=assignment.id,
         request_id=request.id,
         provider_id=assignment.provider_id,
         collector_id=assignment.collector_id,
+        vehicle_id=assignment.vehicle_id,
+        resident_name=(resident.full_name if resident is not None else "Resident"),
+        resident_phone=(resident.phone_number if resident is not None else None),
         pickup_address=request.pickup_address,
         waste_type=request.waste_type,
         priority=_status_value(request.priority),
