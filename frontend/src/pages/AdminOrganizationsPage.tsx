@@ -36,7 +36,7 @@ export function AdminOrganizationsPage() {
     tax_clearance_reference: "",
     powers_of_attorney_reference: "",
     gazette_reference: "",
-    years_experience: "1",
+    years_experience: "5",
     daily_capacity_tons: "200",
     disposal_facility_name: "",
     disposal_facility_location: "",
@@ -236,8 +236,8 @@ export function AdminOrganizationsPage() {
             <label>Gazette / government authorization reference<input value={direct.gazette_reference} onChange={(e) => setDirectField("gazette_reference", e.target.value)} /></label>
 
             <div className="form-grid-two">
-              <label>Years experience<input required type="number" min="0" value={direct.years_experience} onChange={(e) => setDirectField("years_experience", e.target.value)} /></label>
-              <label>Daily capacity (tons)<input required type="number" min="0.1" step="0.1" value={direct.daily_capacity_tons} onChange={(e) => setDirectField("daily_capacity_tons", e.target.value)} /></label>
+              <label>Years experience<input required type="number" min="5" value={direct.years_experience} onChange={(e) => setDirectField("years_experience", e.target.value)} /></label>
+              <label>Daily capacity (tons)<input required type="number" min="200" step="0.1" value={direct.daily_capacity_tons} onChange={(e) => setDirectField("daily_capacity_tons", e.target.value)} /></label>
               <label>Disposal facility<input required value={direct.disposal_facility_name} onChange={(e) => setDirectField("disposal_facility_name", e.target.value)} /></label>
               <label>Disposal authorization<input required value={direct.disposal_authorization_reference} onChange={(e) => setDirectField("disposal_authorization_reference", e.target.value)} /></label>
             </div>
