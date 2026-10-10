@@ -2165,3 +2165,499 @@ textarea:focus {
     grid-column: auto;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Resident information architecture refinement                               */
+/* -------------------------------------------------------------------------- */
+
+.dashboard-welcome {
+  min-height: 155px;
+  padding-block: 1.6rem;
+}
+
+.dashboard-welcome .button {
+  flex: 0 0 auto;
+}
+
+.dashboard-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-focus-card {
+  position: relative;
+  min-height: 205px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.25rem;
+  border: 1px solid var(--wh-border);
+  border-radius: 1.15rem;
+  background: #fff;
+  box-shadow: 0 9px 28px rgba(24, 64, 39, 0.04);
+}
+
+.dashboard-focus-card.next-pickup-card {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(87, 194, 72, 0.17), transparent 10rem),
+    linear-gradient(145deg, #f7fcf5, #eef8ef);
+  border-color: #d4e8d5;
+}
+
+.dashboard-card-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.8rem;
+  color: var(--wh-green-800);
+  background: var(--wh-green-100);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.dashboard-focus-card > div:nth-child(2) {
+  flex: 1;
+}
+
+.dashboard-focus-card strong {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+
+.dashboard-focus-card p {
+  margin: 0.45rem 0 0;
+  color: var(--wh-muted);
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.dashboard-focus-card > .text-link {
+  align-self: flex-start;
+}
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.65fr);
+  gap: 1rem;
+}
+
+.notification-panel {
+  min-width: 0;
+}
+
+.dashboard-notification-list {
+  display: grid;
+}
+
+.dashboard-notification {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: start;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e8eee9;
+}
+
+.dashboard-notification:last-child {
+  border-bottom: 0;
+  padding-bottom: 0.2rem;
+}
+
+.dashboard-notification:first-child {
+  padding-top: 0.2rem;
+}
+
+.dashboard-notification.unread {
+  color: var(--wh-ink);
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 0.4rem;
+  border-radius: 50%;
+  background: #c5d2c7;
+}
+
+.dashboard-notification.unread .notification-dot {
+  background: var(--wh-green-500);
+  box-shadow: 0 0 0 4px rgba(66, 185, 79, 0.13);
+}
+
+.dashboard-notification strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.dashboard-notification p {
+  margin: 0.25rem 0 0.35rem;
+  color: var(--wh-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.dashboard-notification small {
+  color: #8b958e;
+}
+
+.quick-actions-panel {
+  align-self: start;
+}
+
+.quick-action-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.quick-action-list a {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid var(--wh-border);
+  border-radius: 0.85rem;
+  color: inherit;
+  text-decoration: none;
+  background: #fbfdfb;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.quick-action-list a:hover {
+  transform: translateY(-1px);
+  border-color: #b9dabf;
+  background: #f4faf3;
+}
+
+.quick-action-list a > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  color: var(--wh-green-800);
+  background: var(--wh-green-100);
+  font-weight: 900;
+}
+
+.quick-action-list strong,
+.quick-action-list small {
+  display: block;
+}
+
+.quick-action-list strong {
+  font-size: 0.86rem;
+}
+
+.quick-action-list small {
+  margin-top: 0.2rem;
+  color: var(--wh-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+/* Requests */
+
+.request-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.compact-location-strip {
+  background: #f8fbf7;
+}
+
+.warning-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #edd79a;
+  border-radius: 0.95rem;
+  background: #fff9e9;
+}
+
+.warning-banner p {
+  margin: 0.25rem 0 0;
+  color: #725f2f;
+  font-size: 0.82rem;
+}
+
+.request-history-panel {
+  max-height: 740px;
+  overflow: hidden;
+}
+
+.request-history-panel .list-stack {
+  max-height: 620px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.request-history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid #e8eee9;
+}
+
+.request-history-card:last-child {
+  border-bottom: 0;
+}
+
+.request-history-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.request-history-card p {
+  margin: 0.3rem 0 0.2rem;
+  color: #506158;
+  font-size: 0.84rem;
+}
+
+.request-history-card small {
+  color: #8b958e;
+}
+
+/* Profile */
+
+.profile-summary-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.25fr 0.95fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-summary-card {
+  min-height: 185px;
+  padding: 1.25rem;
+  border: 1px solid var(--wh-border);
+  border-radius: 1.15rem;
+  background: #fff;
+  box-shadow: 0 9px 28px rgba(24, 64, 39, 0.04);
+}
+
+.profile-summary-card .summary-icon {
+  margin-bottom: 1rem;
+}
+
+.profile-summary-card strong {
+  display: block;
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.profile-summary-card p {
+  margin: 0.45rem 0 0;
+  color: var(--wh-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.profile-form-panel {
+  max-width: 980px;
+}
+
+.profile-location-box {
+  background: #f8fbf7;
+}
+
+.profile-service-note {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid #dfe8e0;
+  border-radius: 0.85rem;
+  background: #fafcf9;
+}
+
+.profile-service-note > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  color: var(--wh-green-800);
+  background: var(--wh-green-100);
+  font-weight: 900;
+}
+
+.profile-service-note p {
+  margin: 0.2rem 0 0;
+  color: var(--wh-muted);
+  font-size: 0.8rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Payments refinement */
+
+.monthly-payment-card {
+  max-width: 920px;
+}
+
+.monthly-payment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.6fr);
+  gap: 2rem;
+  align-items: end;
+}
+
+.clean-price-line {
+  margin-bottom: 0.45rem;
+}
+
+.monthly-payment-action {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.paid-state {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem;
+  border: 1px solid #cfe8d2;
+  border-radius: 0.85rem;
+  background: #f1faf1;
+}
+
+.paid-state > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--wh-green-600);
+  font-weight: 900;
+}
+
+.paid-state strong {
+  display: block;
+}
+
+.paid-state p {
+  margin: 0.2rem 0 0;
+  color: var(--wh-muted);
+  font-size: 0.78rem;
+}
+
+/* Support */
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.support-case-card {
+  padding: 1rem 0;
+  border: 0;
+  border-bottom: 1px solid #e8eee9;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.support-case-card:last-child {
+  border-bottom: 0;
+}
+
+.case-resolution {
+  margin-top: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border-left: 3px solid var(--wh-green-500);
+  border-radius: 0.4rem;
+  background: #f3faf3;
+}
+
+.case-resolution p {
+  margin: 0.25rem 0 0;
+  color: #526258;
+  font-size: 0.82rem;
+}
+
+/* Resident map legend: only route + truck */
+
+.legend-truck {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: #e5f4e7;
+  font-style: normal;
+}
+
+@media (max-width: 1120px) {
+  .dashboard-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-main-grid,
+  .request-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-history-panel {
+    max-height: none;
+  }
+
+  .request-history-panel .list-stack {
+    max-height: none;
+  }
+
+  .profile-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-welcome {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .support-grid,
+  .monthly-payment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-notification {
+    grid-template-columns: 10px minmax(0, 1fr);
+  }
+
+  .dashboard-notification .text-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .warning-banner,
+  .request-history-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
