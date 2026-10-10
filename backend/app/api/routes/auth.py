@@ -27,6 +27,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         db=db,
         full_name=data.full_name,
         email=data.email,
+        phone_number=data.phone_number,
         password=data.password,
         client_type=data.client_type,
         default_address=data.default_address,
