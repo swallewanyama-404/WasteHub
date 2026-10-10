@@ -1,12 +1,28 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from backend.app.models.user import UserRole
 
 
+class AdminUserCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    full_name: str = Field(min_length=2, max_length=150)
+    email: EmailStr
+    phone_number: str = Field(min_length=7, max_length=30)
+    password: str = Field(min_length=8, max_length=128)
+    role: UserRole
+    provider_id: int | None = None
+    zone_id: int | None = None
+    is_active: bool = True
+
+
 class AdminUserUpdate(BaseModel):
     role: UserRole | None = None
+    phone_number: str | None = Field(default=None, min_length=7, max_length=30)
+    provider_id: int | None = None
+    zone_id: int | None = None
     is_active: bool | None = None
 
 
@@ -16,7 +32,10 @@ class AdminUserResponse(BaseModel):
     id: int
     full_name: str
     email: str
+    phone_number: str | None
     role: UserRole
+    provider_id: int | None
+    zone_id: int | None
     is_active: bool
     created_at: datetime
 
