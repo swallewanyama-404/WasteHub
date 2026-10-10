@@ -35,7 +35,8 @@ class Settings(BaseSettings):
         if self.app_env.lower() == "production":
             if self.secret_key in {
                 "change-this-development-secret",
-            }:
+                "replace-with-a-long-random-secret",
+            } or len(self.secret_key) < 32:
                 raise ValueError(
                     "A strong SECRET_KEY is required when APP_ENV=production."
                 )
