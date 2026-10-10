@@ -42,12 +42,24 @@ def start_tracking_session(
             detail="Accept the assignment before starting GPS tracking",
         )
 
+    if assignment.vehicle_id is not None and assignment.vehicle_id != data.vehicle_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This assignment already has a different truck reserved by operations",
+        )
+
     vehicle = db.get(Vehicle, data.vehicle_id)
 
     if vehicle is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Vehicle not found",
+        )
+
+    if assignment.provider_id != vehicle.provider_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The selected truck does not belong to the assignment's service provider",
         )
 
     if not vehicle.is_active:
@@ -90,6 +102,8 @@ def start_tracking_session(
             status_code=status.HTTP_409_CONFLICT,
             detail="Vehicle already has an active tracking session",
         )
+
+    assignment.vehicle_id = vehicle.id
 
     tracking_session = TrackingSession(
         assignment_id=data.assignment_id,
