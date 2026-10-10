@@ -5,10 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.app.models.collection_request import (
-    CollectionRequest,
-    CollectionRequestStatus,
-)
+from backend.app.models.collection_request import CollectionRequest, CollectionRequestStatus
 from backend.app.models.complaint import Complaint
 from backend.app.models.feedback import Feedback
 from backend.app.models.user import User, UserRole
@@ -16,19 +13,14 @@ from backend.app.schemas.complaint import ComplaintCreate, ComplaintUpdate
 from backend.app.schemas.feedback import FeedbackCreate
 from backend.app.services.audit_service import record_audit
 from backend.app.services.notification_service import create_notification
+from backend.app.services.service_area_service import provider_zone_ids
 
 
-def create_complaint(
-    db: Session,
-    resident: User,
-    data: ComplaintCreate,
-) -> Complaint:
+def create_complaint(db: Session, resident: User, data: ComplaintCreate) -> Complaint:
     if data.request_id is not None:
         request = db.get(CollectionRequest, data.request_id)
-
         if request is None:
             raise HTTPException(status_code=404, detail="Collection request not found")
-
         if request.resident_id != resident.id:
             raise HTTPException(status_code=403, detail="This request does not belong to you")
 
@@ -68,11 +60,24 @@ def get_resident_complaints(db: Session, resident_id: int) -> list[Complaint]:
     )
 
 
-def get_all_complaints(db: Session) -> list[Complaint]:
+def get_all_complaints(db: Session, actor: User | None = None) -> list[Complaint]:
+    statement = select(Complaint)
+
+    if actor is not None and actor.role == UserRole.SUPERVISOR:
+        if actor.provider_id is None:
+            return []
+        zone_ids = provider_zone_ids(db, actor.provider_id)
+        if not zone_ids:
+            return []
+
+        statement = (
+            statement.join(User, User.id == Complaint.resident_id)
+            .where(User.zone_id.in_(zone_ids))
+        )
+
     return list(
         db.scalars(
-            select(Complaint)
-            .order_by(
+            statement.order_by(
                 Complaint.status.asc(),
                 Complaint.priority.desc(),
                 Complaint.created_at.asc(),
@@ -88,9 +93,15 @@ def update_complaint(
     actor: User,
 ) -> Complaint:
     complaint = db.get(Complaint, complaint_id)
-
     if complaint is None:
         raise HTTPException(status_code=404, detail="Complaint not found")
+
+    if actor.role == UserRole.SUPERVISOR:
+        if actor.provider_id is None:
+            raise HTTPException(status_code=403, detail="Supervisor is not linked to a provider")
+        resident = db.get(User, complaint.resident_id)
+        if resident is None or resident.zone_id not in provider_zone_ids(db, actor.provider_id):
+            raise HTTPException(status_code=403, detail="This complaint is outside your organization's service zones")
 
     if data.assigned_to is not None:
         assignee = db.get(User, data.assigned_to)
@@ -101,23 +112,63 @@ def update_complaint(
             UserRole.WASTE_ADMIN,
             UserRole.SYSTEM_ADMIN,
         }:
-            raise HTTPException(
-                status_code=400,
-                detail="Complaints can only be assigned to operational staff",
-            )
+            raise HTTPException(status_code=400, detail="Complaints can only be assigned to operational staff")
+        if actor.role == UserRole.SUPERVISOR and assignee.provider_id != actor.provider_id:
+            raise HTTPException(status_code=403, detail="Complaint can only be assigned inside your organization")
         complaint.assigned_to = assignee.id
 
     if data.priority is not None:
         complaint.priority = data.priority
 
-    if data.status is not None:
-        complaint.status = data.status
-        if data.status in {"resolved", "closed"}:
-            complaint.resolved_at = datetime.now(timezone.utc)
-        else:
-            complaint.resolved_at = None
+    requested_status = data.status
+    if requested_status == "closed":
+        raise HTTPException(
+            status_code=403,
+            detail="Only the resident can close a resolved complaint after confirming the service outcome",
+        )
 
-    if data.resolution is not None:
+    if requested_status == "open" and complaint.status != "open":
+        raise HTTPException(status_code=409, detail="A complaint under review cannot be moved back to open")
+
+    if requested_status == "in_review":
+        if complaint.status not in {"open", "in_review"}:
+            raise HTTPException(status_code=409, detail="Only open complaints can enter review")
+        complaint.status = "in_review"
+        if complaint.assigned_to is None:
+            complaint.assigned_to = actor.id
+        complaint.resolved_at = None
+
+    if requested_status == "resolved":
+        if complaint.status != "in_review":
+            raise HTTPException(
+                status_code=409,
+                detail="Start a review and investigate the complaint before resolving it",
+            )
+
+        if complaint.category == "missed_collection" and complaint.request_id is not None:
+            request = db.get(CollectionRequest, complaint.request_id)
+            if request is None or request.status != CollectionRequestStatus.COMPLETED:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "This missed-collection complaint cannot be resolved until the pickup "
+                        "has been reassigned and successfully completed"
+                    ),
+                )
+
+        resolution_text = (
+            data.resolution.strip()
+            if data.resolution is not None
+            else (complaint.resolution or "").strip()
+        )
+        if not resolution_text:
+            raise HTTPException(status_code=422, detail="Record the investigation outcome before resolving the complaint")
+
+        complaint.status = "resolved"
+        complaint.resolution = resolution_text
+        complaint.resolved_at = datetime.now(timezone.utc)
+
+    if data.resolution is not None and requested_status != "resolved":
         complaint.resolution = data.resolution.strip() or None
 
     create_notification(
@@ -146,24 +197,48 @@ def update_complaint(
     return complaint
 
 
-def create_feedback(
+def close_complaint_by_resident(
     db: Session,
+    complaint_id: int,
     resident: User,
-    data: FeedbackCreate,
-) -> Feedback:
-    request = db.get(CollectionRequest, data.request_id)
-
-    if request is None:
-        raise HTTPException(status_code=404, detail="Collection request not found")
-
-    if request.resident_id != resident.id:
-        raise HTTPException(status_code=403, detail="This request does not belong to you")
-
-    if request.status != CollectionRequestStatus.COMPLETED:
+    confirmation: str | None = None,
+) -> Complaint:
+    complaint = db.get(Complaint, complaint_id)
+    if complaint is None:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    if complaint.resident_id != resident.id:
+        raise HTTPException(status_code=403, detail="This complaint does not belong to you")
+    if complaint.status != "resolved":
         raise HTTPException(
             status_code=409,
-            detail="Feedback can only be submitted after collection is completed",
+            detail="You can close a complaint only after the service team marks it resolved",
         )
+
+    complaint.status = "closed"
+    complaint.closed_at = datetime.now(timezone.utc)
+
+    record_audit(
+        db,
+        actor_id=resident.id,
+        action="complaint.closed_by_resident",
+        entity_type="complaint",
+        entity_id=complaint.id,
+        details={"confirmation": confirmation},
+    )
+
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+
+
+def create_feedback(db: Session, resident: User, data: FeedbackCreate) -> Feedback:
+    request = db.get(CollectionRequest, data.request_id)
+    if request is None:
+        raise HTTPException(status_code=404, detail="Collection request not found")
+    if request.resident_id != resident.id:
+        raise HTTPException(status_code=403, detail="This request does not belong to you")
+    if request.status != CollectionRequestStatus.COMPLETED:
+        raise HTTPException(status_code=409, detail="Feedback can only be submitted after collection is completed")
 
     feedback = Feedback(
         resident_id=resident.id,
@@ -171,17 +246,13 @@ def create_feedback(
         rating=data.rating,
         comment=data.comment.strip() if data.comment else None,
     )
-
     db.add(feedback)
 
     try:
         db.flush()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Feedback has already been submitted for this request",
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Feedback has already been submitted for this request")
 
     record_audit(
         db,
