@@ -172,6 +172,35 @@ def _get_missed_collection_alerts(
     return alerts
 
 
+def _get_rejected_assignment_alerts(
+    db: Session,
+) -> list[OrganizationAlertResponse]:
+    assignments = list(
+        db.scalars(
+            select(CollectionAssignment)
+            .where(CollectionAssignment.status == AssignmentStatus.REJECTED)
+            .order_by(CollectionAssignment.updated_at.desc())
+        ).all()
+    )
+
+    return [
+        OrganizationAlertResponse(
+            alert_id=f"rejected-assignment-{assignment.id}",
+            alert_type="rejected_assignment",
+            severity="medium",
+            title="Collector returned assignment",
+            message=(
+                f"Collection assignment {assignment.id} was rejected by the collector "
+                "and requires reassignment."
+            ),
+            entity_type="collection_assignment",
+            entity_id=assignment.id,
+            created_at=assignment.updated_at,
+        )
+        for assignment in assignments
+    ]
+
+
 def _get_stale_gps_alerts(
     db: Session,
 ) -> list[OrganizationAlertResponse]:
@@ -283,9 +312,8 @@ def _get_unassigned_request_alerts(
             select(CollectionRequest)
             .where(
                 CollectionRequest.status.notin_(
-                    list(
-                        TERMINAL_REQUEST_STATUSES
-                    )
+                    list(TERMINAL_REQUEST_STATUSES)
+                    + [CollectionRequestStatus.PAYMENT_PENDING]
                 )
             )
             .order_by(
@@ -498,6 +526,10 @@ def get_organization_alerts(
 
     alerts.extend(
         _get_missed_collection_alerts(db)
+    )
+
+    alerts.extend(
+        _get_rejected_assignment_alerts(db)
     )
 
     alerts.extend(
