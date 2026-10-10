@@ -31,6 +31,9 @@ export function LandingPage() {
             <Link className="button primary large" to="/register">Create resident account</Link>
             <Link className="button secondary large" to="/login">Open workspace</Link>
           </div>
+          <p className="provider-join-link">
+            Licensed waste service organization? <Link to="/organization/register">Apply to join WasteHub →</Link>
+          </p>
           <div className="trust-row">
             <span>✓ Saved service location</span>
             <span>✓ Weekly reminders</span>
@@ -133,7 +136,10 @@ export function LandingPage() {
       <footer className="landing-footer">
         <WasteHubLogo />
         <p>Smart waste collection for cleaner, better-connected communities.</p>
-        <span>WasteHub academic demonstration platform.</span>
+        <span>
+          <Link className="footer-provider-link" to="/organization/register">Provider application</Link>
+          {" · "}WasteHub academic demonstration platform.
+        </span>
       </footer>
     </main>
   );
