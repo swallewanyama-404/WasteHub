@@ -24,11 +24,6 @@ def main() -> None:
     full_name = required("WASTEHUB_ADMIN_NAME")
     email = required("WASTEHUB_ADMIN_EMAIL").lower()
     phone = required("WASTEHUB_ADMIN_PHONE")
-    password = required("WASTEHUB_ADMIN_PASSWORD")
-
-    if len(password) < 12:
-        raise RuntimeError("WASTEHUB_ADMIN_PASSWORD must contain at least 12 characters")
-
     db = SessionLocal()
     try:
         existing = db.scalar(select(User).where(User.email == email))
@@ -43,6 +38,10 @@ def main() -> None:
             db.commit()
             print(f"WasteHub administrator is ready: {email}")
             return
+
+        password = required("WASTEHUB_ADMIN_PASSWORD")
+        if len(password) < 12:
+            raise RuntimeError("WASTEHUB_ADMIN_PASSWORD must contain at least 12 characters")
 
         user = User(
             full_name=full_name,
