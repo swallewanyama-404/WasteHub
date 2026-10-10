@@ -144,7 +144,7 @@ export function ResidentTrackingPage() {
                 {tracking.tracking_active ? "● LIVE" : statusLabel}
               </span>
             </div>
-            <OperationsMap truck={truck} pickup={pickup} />
+            <OperationsMap truck={truck} pickup={pickup} legendMode="resident" />
             <p className="map-helper">{liveMessage}</p>
           </section>
 
