@@ -36,6 +36,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [clientType, setClientType] = useState("household");
   const [address, setAddress] = useState("");
@@ -91,6 +92,7 @@ export function RegisterPage() {
         body: JSON.stringify({
           full_name: fullName,
           email,
+          phone_number: phoneNumber,
           password,
           client_type: clientType,
           default_address: address,
@@ -149,10 +151,25 @@ export function RegisterPage() {
               </label>
             </div>
 
-            <label>
-              Password
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={8} required />
-            </label>
+            <div className="form-grid-two">
+              <label>
+                Phone number
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  autoComplete="tel"
+                  placeholder="+256 7XX XXX XXX"
+                  required
+                  minLength={7}
+                />
+                <small>Used only for service coordination, such as a collector calling when they reach your pickup.</small>
+              </label>
+              <label>
+                Password
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={8} required />
+              </label>
+            </div>
 
             <fieldset className="client-type-fieldset">
               <legend>What kind of client are you?</legend>
@@ -207,6 +224,8 @@ export function RegisterPage() {
 
           <p className="muted auth-footer">
             Already registered? <Link to="/login">Sign in</Link>
+            <br />
+            Waste collection organization? <Link to="/organization/register">Apply to join WasteHub</Link>
           </p>
         </div>
       </section>
