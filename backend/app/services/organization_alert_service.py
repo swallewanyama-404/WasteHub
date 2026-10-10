@@ -14,6 +14,8 @@ from backend.app.models.collection_request import (
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
 from backend.app.models.vehicle_location import VehicleLocation
+from backend.app.models.user import User, UserRole
+from backend.app.services.service_area_service import provider_serves_zone
 from backend.app.schemas.organization_alerts import (
     OrganizationAlertResponse,
     OrganizationAlertSummaryResponse,
@@ -448,8 +450,45 @@ def _get_vehicle_exception_alerts(
     return alerts
 
 
+def _alert_visible_to_actor(
+    db: Session,
+    alert: OrganizationAlertResponse,
+    actor: User | None,
+) -> bool:
+    if actor is None or actor.role != UserRole.SUPERVISOR:
+        return True
+
+    if actor.provider_id is None:
+        return False
+
+    if alert.entity_type == "collection_assignment":
+        assignment = db.get(CollectionAssignment, alert.entity_id)
+        return assignment is not None and assignment.provider_id == actor.provider_id
+
+    if alert.entity_type == "collection_request":
+        request = db.get(CollectionRequest, alert.entity_id)
+        return (
+            request is not None
+            and provider_serves_zone(db, actor.provider_id, request.zone_id)
+        )
+
+    if alert.entity_type == "tracking_session":
+        session = db.get(TrackingSession, alert.entity_id)
+        if session is None:
+            return False
+        assignment = db.get(CollectionAssignment, session.assignment_id)
+        return assignment is not None and assignment.provider_id == actor.provider_id
+
+    if alert.entity_type == "vehicle":
+        vehicle = db.get(Vehicle, alert.entity_id)
+        return vehicle is not None and vehicle.provider_id == actor.provider_id
+
+    return False
+
+
 def get_organization_alerts(
     db: Session,
+    actor: User | None = None,
 ) -> list[OrganizationAlertResponse]:
     alerts = []
 
@@ -480,15 +519,16 @@ def get_organization_alerts(
         "low": 3,
     }
 
+    alerts = [
+        alert
+        for alert in alerts
+        if _alert_visible_to_actor(db, alert, actor)
+    ]
+
     alerts.sort(
         key=lambda alert: (
-            severity_order.get(
-                alert.severity,
-                99,
-            ),
-            -_as_utc(
-                alert.created_at
-            ).timestamp(),
+            severity_order.get(alert.severity, 99),
+            -_as_utc(alert.created_at).timestamp(),
         )
     )
 
@@ -497,9 +537,11 @@ def get_organization_alerts(
 
 def get_organization_alert_summary(
     db: Session,
+    actor: User | None = None,
 ) -> OrganizationAlertSummaryResponse:
     alerts = get_organization_alerts(
-        db=db
+        db=db,
+        actor=actor,
     )
 
     return OrganizationAlertSummaryResponse(
