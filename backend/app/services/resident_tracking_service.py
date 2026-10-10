@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from backend.app.models.collection_assignment import CollectionAssignment
 from backend.app.models.collection_event import CollectionEvent
 from backend.app.models.collection_request import CollectionRequest
+from backend.app.models.user import User
 from backend.app.schemas.resident_tracking import (
     ResidentRequestTrackingResponse,
     ResidentTimelineEvent,
@@ -57,6 +58,12 @@ def get_resident_request_tracking(
             for event in rows
         ]
 
+    collector = (
+        db.get(User, assignment.collector_id)
+        if assignment is not None
+        else None
+    )
+
     truck = get_resident_truck_tracking(
         db=db,
         request_id=request_id,
@@ -72,6 +79,8 @@ def get_resident_request_tracking(
             if assignment is not None
             else None
         ),
+        collector_name=(collector.full_name if collector is not None else None),
+        collector_phone=(collector.phone_number if collector is not None else None),
         tracking_active=truck.tracking_active,
         vehicle_registration_number=truck.vehicle_registration_number,
         truck_latitude=truck.truck_latitude,
