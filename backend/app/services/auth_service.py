@@ -62,6 +62,7 @@ def update_resident_profile(
     if user.role != UserRole.RESIDENT:
         raise HTTPException(status_code=403, detail="Only residents have a service profile")
 
+    user.full_name = data.full_name
     user.client_type = _validate_client_type(data.client_type)
     user.default_address = data.default_address
     user.default_latitude = data.default_latitude
@@ -73,7 +74,11 @@ def update_resident_profile(
         action="resident.profile_updated",
         entity_type="user",
         entity_id=user.id,
-        details={"client_type": user.client_type, "default_address": user.default_address},
+        details={
+            "full_name": user.full_name,
+            "client_type": user.client_type,
+            "default_address": user.default_address,
+        },
     )
     db.commit()
     db.refresh(user)
