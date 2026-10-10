@@ -390,6 +390,16 @@ def test_end_to_end_wastehub_workflow():
     assert service_plan_response.status_code == 200, service_plan_response.text
     assert service_plan_response.json()["month_paid"] is True
 
+    auto_queue_response = client.get(
+        "/api/v1/collector/queue",
+        headers=_auth(collector_token),
+    )
+    assert auto_queue_response.status_code == 200, auto_queue_response.text
+    assert any(
+        item["assignment_status"] == "pending" and item["vehicle_id"] == vehicle["id"]
+        for item in auto_queue_response.json()
+    ), auto_queue_response.text
+
     notifications_response = client.get(
         "/api/v1/notifications",
         headers=_auth(resident_token),
@@ -418,3 +428,121 @@ def test_end_to_end_wastehub_workflow():
     assert "complaint.closed_by_resident" in actions
     assert "collection_request.cancelled_by_resident" in actions
     assert "payment.succeeded_demo" in actions
+
+
+
+def test_private_provider_application_and_approval():
+    suffix = uuid.uuid4().hex[:8]
+    password = "WasteHubProvider123!"
+    admin_email = f"provider-admin-{suffix}@example.com"
+    supervisor_email = f"provider-supervisor-{suffix}@example.com"
+
+    _register(admin_email, password, "Provider Review Admin", "+256700200001")
+
+    db = SessionLocal()
+    try:
+        admin = db.scalar(select(User).where(User.email == admin_email))
+        assert admin is not None
+        admin.role = UserRole.SYSTEM_ADMIN
+        db.commit()
+    finally:
+        db.close()
+
+    admin_token = _login(admin_email, password)
+
+    zone_response = client.post(
+        "/api/v1/zones",
+        headers=_auth(admin_token),
+        json={
+            "name": f"Provider Application Zone {suffix}",
+            "code": f"PAZ-{suffix}",
+            "municipality": "Kampala",
+            "description": "Provider onboarding integration zone",
+            "center_latitude": 0.355,
+            "center_longitude": 32.600,
+            "radius_km": 8,
+        },
+    )
+    assert zone_response.status_code == 201, zone_response.text
+    zone = zone_response.json()
+
+    application_response = client.post(
+        "/api/v1/provider-applications",
+        json={
+            "organization_name": f"Green Provider {suffix}",
+            "proposed_code": f"GREEN-{suffix}",
+            "registered_address": "Integration Industrial Area, Kampala",
+            "contact_email": f"contact-{suffix}@example.com",
+            "contact_phone": "+256700200010",
+            "website": None,
+            "company_registration_number": f"URSB-{suffix}",
+            "tin": f"TIN-{suffix}",
+            "nema_license_number": f"NEMA-{suffix}",
+            "kcca_trading_license_number": f"KCCA-{suffix}",
+            "tax_clearance_reference": f"TCC-{suffix}",
+            "powers_of_attorney_reference": f"POA-{suffix}",
+            "gazette_reference": f"GAZ-{suffix}",
+            "years_experience": 4,
+            "daily_capacity_tons": 220,
+            "disposal_facility_name": "Integration Approved Disposal Site",
+            "disposal_facility_location": "Kampala Metropolitan Area",
+            "disposal_authorization_reference": f"DISP-{suffix}",
+            "monitoring_capability": "GPS fleet tracking and real-time service reporting.",
+            "client_service_hours": 14,
+            "requested_zone_ids": [zone["id"]],
+            "fleet": [
+                {
+                    "registration_number": f"UPA-{suffix}",
+                    "vehicle_type": "Waste Collection Truck",
+                    "capacity_tons": 8,
+                    "zone_id": zone["id"],
+                }
+            ],
+            "supervisor_full_name": "Provider Integration Supervisor",
+            "supervisor_email": supervisor_email,
+            "supervisor_phone": "+256700200011",
+            "supervisor_password": password,
+        },
+    )
+    assert application_response.status_code == 201, application_response.text
+    application = application_response.json()
+    assert application["status"] == "pending"
+
+    inactive_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": supervisor_email, "password": password},
+    )
+    assert inactive_login.status_code == 401
+
+    approval_response = client.patch(
+        f"/api/v1/provider-applications/{application['id']}",
+        headers=_auth(admin_token),
+        json={
+            "decision": "approved",
+            "review_notes": "Verified for integration test.",
+        },
+    )
+    assert approval_response.status_code == 200, approval_response.text
+    approved = approval_response.json()
+    assert approved["status"] == "approved"
+    assert approved["provider_id"] is not None
+
+    supervisor_token = _login(supervisor_email, password)
+
+    scoped_zones = client.get(
+        "/api/v1/organization-portal/zones",
+        headers=_auth(supervisor_token),
+    )
+    assert scoped_zones.status_code == 200, scoped_zones.text
+    assert [item["id"] for item in scoped_zones.json()] == [zone["id"]]
+
+    fleet_response = client.get(
+        "/api/v1/organization-portal/fleet",
+        headers=_auth(supervisor_token),
+    )
+    assert fleet_response.status_code == 200, fleet_response.text
+    assert any(
+        item["registration_number"] == f"UPA-{suffix}".upper()
+        and item["zone_id"] == zone["id"]
+        for item in fleet_response.json()
+    )
