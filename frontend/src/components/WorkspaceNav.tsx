@@ -2,13 +2,14 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const icons: Record<string, string> = {
-  Requests: "⌂",
+  Dashboard: "⌂",
+  Requests: "⚡",
   Tracking: "⌖",
   Payments: "▣",
+  Profile: "●",
   Support: "?",
   Queue: "☷",
   "Route map": "⌖",
-  Dashboard: "⌂",
   Dispatch: "➜",
   Monitoring: "◉",
   "Service desk": "☰",
@@ -21,9 +22,11 @@ export function WorkspaceNav() {
   const links =
     user.role === "resident"
       ? [
-          ["/resident", "Requests"],
+          ["/resident", "Dashboard"],
+          ["/resident/requests", "Requests"],
           ["/resident/tracking", "Tracking"],
           ["/resident/payments", "Payments"],
+          ["/resident/profile", "Profile"],
           ["/resident/support", "Support"],
         ]
       : user.role === "collector"
