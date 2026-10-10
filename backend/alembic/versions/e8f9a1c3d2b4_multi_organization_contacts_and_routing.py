@@ -50,6 +50,8 @@ def upgrade() -> None:
     op.create_index("ix_users_provider_id", "users", ["provider_id"], unique=False)
     op.create_index("ix_users_zone_id", "users", ["zone_id"], unique=False)
 
+    op.add_column("complaints", sa.Column("closed_at", sa.DateTime(timezone=True), nullable=True))
+
     op.add_column("collection_requests", sa.Column("zone_id", sa.Integer(), nullable=True))
     op.add_column("collection_requests", sa.Column("cancellation_reason", sa.Text(), nullable=True))
     op.add_column("collection_requests", sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True))
@@ -147,6 +149,7 @@ def downgrade() -> None:
     op.drop_column("collection_requests", "cancelled_at")
     op.drop_column("collection_requests", "cancellation_reason")
     op.drop_column("collection_requests", "zone_id")
+    op.drop_column("complaints", "closed_at")
 
     op.drop_index("ix_users_zone_id", table_name="users")
     op.drop_index("ix_users_provider_id", table_name="users")
