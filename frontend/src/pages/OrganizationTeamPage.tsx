@@ -25,7 +25,7 @@ export function OrganizationTeamPage() {
     try {
       const [teamData, zoneData] = await Promise.all([
         apiRequest<User[]>("/organization-portal/team", {}, token),
-        apiRequest<Zone[]>("/zones", {}, token),
+        apiRequest<Zone[]>("/organization-portal/zones", {}, token),
       ]);
       setTeam(teamData);
       setZones(zoneData.filter((zone) => zone.is_active));
