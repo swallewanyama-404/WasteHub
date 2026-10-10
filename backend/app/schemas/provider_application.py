@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class ProviderFleetItem(BaseModel):
     registration_number: str = Field(min_length=2, max_length=30)
     vehicle_type: str = Field(min_length=2, max_length=100)
-    capacity_tons: float | None = Field(default=None, gt=0, le=100)
+    capacity_tons: float = Field(ge=5, le=100)
     zone_id: int
 
 
@@ -28,13 +28,13 @@ class ProviderApplicationCreate(BaseModel):
     powers_of_attorney_reference: str = Field(min_length=2, max_length=120)
     gazette_reference: str | None = Field(default=None, max_length=180)
 
-    years_experience: int = Field(ge=0, le=100)
-    daily_capacity_tons: float = Field(gt=0, le=100000)
+    years_experience: int = Field(ge=5, le=100)
+    daily_capacity_tons: float = Field(ge=200, le=100000)
     disposal_facility_name: str = Field(min_length=2, max_length=200)
     disposal_facility_location: str = Field(min_length=5, max_length=500)
     disposal_authorization_reference: str = Field(min_length=2, max_length=180)
     monitoring_capability: str = Field(min_length=10, max_length=3000)
-    client_service_hours: int = Field(default=14, ge=1, le=24)
+    client_service_hours: int = Field(default=14, ge=14, le=24)
 
     requested_zone_ids: list[int] = Field(min_length=1, max_length=50)
     fleet: list[ProviderFleetItem] = Field(min_length=1, max_length=200)
