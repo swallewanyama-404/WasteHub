@@ -98,7 +98,7 @@ export function CollectorOverviewPage() {
       <section className="collector-stat-grid">
         <article className="collector-stat-card">
           <span>Assigned today</span>
-          <strong>{dashboard?.pending_assignments ?? 0 + (dashboard?.accepted_assignments ?? 0) + (dashboard?.in_progress_assignments ?? 0)}</strong>
+          <strong>{(dashboard?.pending_assignments ?? 0) + (dashboard?.accepted_assignments ?? 0) + (dashboard?.in_progress_assignments ?? 0)}</strong>
           <small>Active work on your queue</small>
         </article>
         <article className="collector-stat-card">
