@@ -30,7 +30,7 @@ class Payment(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="UGX")
     method: Mapped[str] = mapped_column(String(40), nullable=False)
-    provider: Mapped[str] = mapped_column(String(50), nullable=False, default="demo")
+    provider: Mapped[str] = mapped_column(String(50), nullable=False, default="manual_verification")
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending", index=True)
     external_reference: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
     receipt_number: Mapped[str | None] = mapped_column(String(120), unique=True, nullable=True)
