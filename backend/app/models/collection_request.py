@@ -35,6 +35,9 @@ class CollectionRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     resident_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    zone_id: Mapped[int | None] = mapped_column(
+        ForeignKey("zones.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     request_type: Mapped[CollectionRequestType] = mapped_column(SAEnum(CollectionRequestType, name="collection_request_type"), nullable=False)
     priority: Mapped[CollectionRequestPriority] = mapped_column(
         SAEnum(CollectionRequestPriority, name="collection_request_priority"),
@@ -58,5 +61,7 @@ class CollectionRequest(Base):
     preferred_time_window: Mapped[str | None] = mapped_column(String(100), nullable=True)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
