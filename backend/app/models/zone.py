@@ -15,8 +15,8 @@ class Zone(Base):
     municipality: Mapped[str | None] = mapped_column(String(150), nullable=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Demo-friendly geofencing. Production GIS can replace the circular service
-    # boundary with authoritative polygons without changing routing contracts.
+    # Circular service geofences provide a simple operational boundary model.
+    # Authoritative GIS polygons can replace them without changing routing contracts.
     center_latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     center_longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     radius_km: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
