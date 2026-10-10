@@ -10,46 +10,93 @@ const icons: Record<string, string> = {
   Support: "?",
   Queue: "☷",
   "Route map": "⌖",
+  Operations: "⌂",
   Dispatch: "➜",
   Monitoring: "◉",
   "Service desk": "☰",
+  System: "◆",
+  Users: "●",
+  Audit: "☷",
 };
+
+type NavItem = [string, string];
+type NavGroup = { label?: string; items: NavItem[] };
 
 export function WorkspaceNav() {
   const { user } = useAuth();
   if (!user) return null;
 
-  const links =
-    user.role === "resident"
-      ? [
-          ["/resident", "Dashboard"],
-          ["/resident/requests", "Requests"],
-          ["/resident/tracking", "Tracking"],
-          ["/resident/payments", "Payments"],
-          ["/resident/profile", "Profile"],
-          ["/resident/support", "Support"],
-        ]
-      : user.role === "collector"
-        ? [["/collector", "Queue"], ["/collector/map", "Route map"]]
-        : [
-            ["/organization", "Dashboard"],
-            ["/organization/dispatch", "Dispatch"],
-            ["/organization/monitoring", "Monitoring"],
-            ["/organization/service", "Service desk"],
-          ];
+  let groups: NavGroup[];
+
+  if (user.role === "resident") {
+    groups = [{
+      items: [
+        ["/resident", "Dashboard"],
+        ["/resident/requests", "Requests"],
+        ["/resident/tracking", "Tracking"],
+        ["/resident/payments", "Payments"],
+        ["/resident/profile", "Profile"],
+        ["/resident/support", "Support"],
+      ],
+    }];
+  } else if (user.role === "collector") {
+    groups = [{
+      items: [
+        ["/collector", "Dashboard"],
+        ["/collector/queue", "Queue"],
+        ["/collector/map", "Route map"],
+      ],
+    }];
+  } else if (user.role === "system_admin") {
+    groups = [
+      {
+        label: "System",
+        items: [
+          ["/admin", "System"],
+          ["/admin/users", "Users"],
+          ["/admin/audit", "Audit"],
+        ],
+      },
+      {
+        label: "Operations",
+        items: [
+          ["/organization", "Operations"],
+          ["/organization/dispatch", "Dispatch"],
+          ["/organization/monitoring", "Monitoring"],
+          ["/organization/service", "Service desk"],
+        ],
+      },
+    ];
+  } else {
+    groups = [{
+      items: [
+        ["/organization", "Operations"],
+        ["/organization/dispatch", "Dispatch"],
+        ["/organization/monitoring", "Monitoring"],
+        ["/organization/service", "Service desk"],
+      ],
+    }];
+  }
+
+  const exactRoutes = new Set(["/resident", "/collector", "/organization", "/admin"]);
 
   return (
     <nav className="workspace-nav" aria-label="Workspace navigation">
-      {links.map(([to, label]) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === "/resident" || to === "/collector" || to === "/organization"}
-          className={({ isActive }) => isActive ? "workspace-link active" : "workspace-link"}
-        >
-          <span className="workspace-icon" aria-hidden="true">{icons[label]}</span>
-          <span>{label}</span>
-        </NavLink>
+      {groups.map((group, groupIndex) => (
+        <div className="workspace-nav-group" key={group.label ?? groupIndex}>
+          {group.label ? <span className="workspace-nav-label">{group.label}</span> : null}
+          {group.items.map(([to, label]) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={exactRoutes.has(to)}
+              className={({ isActive }) => isActive ? "workspace-link active" : "workspace-link"}
+            >
+              <span className="workspace-icon" aria-hidden="true">{icons[label]}</span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
       ))}
     </nav>
   );
