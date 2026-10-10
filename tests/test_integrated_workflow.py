@@ -21,7 +21,7 @@ def _register(email: str, password: str, full_name: str, phone: str):
             "password": password,
             "client_type": "household",
             "default_address": "Integration Test Home, Kampala",
-            "default_latitude": 0.3476,
+            "default_latitude": 0.7000,
             "default_longitude": 32.5825,
         },
     )
@@ -84,7 +84,7 @@ def test_end_to_end_wastehub_workflow():
             "code": f"IZ-{suffix}",
             "municipality": "Kampala",
             "description": "Integration geofence",
-            "center_latitude": 0.3476,
+            "center_latitude": 0.7000,
             "center_longitude": 32.5825,
             "radius_km": 10,
         },
@@ -238,7 +238,7 @@ def test_end_to_end_wastehub_workflow():
         f"/api/v1/tracking/sessions/{tracking_session['id']}/locations",
         headers=_auth(collector_token),
         json={
-            "latitude": 0.3475,
+            "latitude": 0.6999,
             "longitude": 32.5824,
             "accuracy_meters": 5,
             "speed_kmh": 12,
