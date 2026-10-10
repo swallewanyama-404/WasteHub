@@ -34,7 +34,7 @@ export function OrganizationRegisterPage() {
   const [powersOfAttorney, setPowersOfAttorney] = useState("");
   const [gazetteReference, setGazetteReference] = useState("");
 
-  const [yearsExperience, setYearsExperience] = useState("1");
+  const [yearsExperience, setYearsExperience] = useState("5");
   const [dailyCapacity, setDailyCapacity] = useState("200");
   const [disposalFacilityName, setDisposalFacilityName] = useState("");
   const [disposalFacilityLocation, setDisposalFacilityLocation] = useState("");
@@ -291,17 +291,17 @@ export function OrganizationRegisterPage() {
             <span>03</span>
             <div>
               <h2>Capacity & disposal arrangements</h2>
-              <p>Describe collection capacity, disposal destination and service monitoring capability.</p>
+              <p>WasteHub validates the published KCCA baseline: at least 5 years' relevant experience, 200 tons/day capacity, 5-ton collection trucks and a client-management desk operating at least 14 hours/day.</p>
             </div>
           </div>
           <div className="form-grid-two">
             <label>
               Years of relevant experience
-              <input required type="number" min="0" max="100" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} />
+              <input required type="number" min="5" max="100" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} />
             </label>
             <label>
               Daily collection capacity (tons)
-              <input required type="number" min="0.1" step="0.1" value={dailyCapacity} onChange={(e) => setDailyCapacity(e.target.value)} />
+              <input required type="number" min="200" step="0.1" value={dailyCapacity} onChange={(e) => setDailyCapacity(e.target.value)} />
             </label>
             <label>
               Disposal / transfer facility name
@@ -323,7 +323,7 @@ export function OrganizationRegisterPage() {
             </label>
             <label>
               Customer service availability (hours/day)
-              <input required type="number" min="1" max="24" value={clientServiceHours} onChange={(e) => setClientServiceHours(e.target.value)} />
+              <input required type="number" min="14" max="24" value={clientServiceHours} onChange={(e) => setClientServiceHours(e.target.value)} />
             </label>
           </div>
         </section>
@@ -382,7 +382,7 @@ export function OrganizationRegisterPage() {
                   </label>
                   <label>
                     Capacity (tons)
-                    <input type="number" min="0.1" step="0.1" value={item.capacity_tons ?? ""} onChange={(e) => updateFleet(item.rowId, { capacity_tons: e.target.value ? Number(e.target.value) : null })} />
+                    <input type="number" min="5" step="0.1" value={item.capacity_tons ?? ""} onChange={(e) => updateFleet(item.rowId, { capacity_tons: e.target.value ? Number(e.target.value) : null })} />
                   </label>
                   <label>
                     Operating zone
