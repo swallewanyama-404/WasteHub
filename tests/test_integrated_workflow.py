@@ -193,8 +193,9 @@ def test_end_to_end_wastehub_workflow():
     urgent_payment = urgent_payment_response.json()
 
     urgent_payment_success = client.post(
-        f"/api/v1/payments/{urgent_payment['id']}/demo-success",
-        headers=_auth(resident_token),
+        f"/api/v1/payments/{urgent_payment['id']}/confirm",
+        headers=_auth(admin_token),
+        json={"settlement_reference": f"MM-URGENT-{suffix}"},
     )
     assert urgent_payment_success.status_code == 200, urgent_payment_success.text
 
@@ -430,8 +431,9 @@ def test_end_to_end_wastehub_workflow():
     payment = payment_response.json()
 
     payment_success_response = client.post(
-        f"/api/v1/payments/{payment['id']}/demo-success",
-        headers=_auth(resident_token),
+        f"/api/v1/payments/{payment['id']}/confirm",
+        headers=_auth(admin_token),
+        json={"settlement_reference": f"MM-MONTHLY-{suffix}"},
     )
     assert payment_success_response.status_code == 200, payment_success_response.text
     assert payment_success_response.json()["status"] == "succeeded"
@@ -480,7 +482,7 @@ def test_end_to_end_wastehub_workflow():
     assert "collection.completed" in actions
     assert "complaint.closed_by_resident" in actions
     assert "collection_request.cancelled_by_resident" in actions
-    assert "payment.succeeded_demo" in actions
+    assert "payment.confirmed" in actions
 
 
 
