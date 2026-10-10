@@ -141,6 +141,10 @@ def simulate_payment_success(db: Session, payment_id: int, resident: User) -> Pa
             message="Your weekly collections are active for the current month.",
         )
 
+        # Import locally to keep payment/routing modules loosely coupled.
+        from backend.app.services.automatic_routing_service import schedule_next_routine_collection
+        schedule_next_routine_collection(db, resident.id)
+
     create_notification(
         db,
         user_id=resident.id,
