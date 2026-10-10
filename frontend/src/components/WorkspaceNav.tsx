@@ -14,7 +14,7 @@ const icons: Record<string, string> = {
   Dispatch: "➜",
   Monitoring: "◉",
   "Service desk": "☰",
-  System: "◆",
+  Overview: "◆",
   Users: "●",
   Audit: "☷",
 };
@@ -52,7 +52,7 @@ export function WorkspaceNav() {
       {
         label: "System",
         items: [
-          ["/admin", "System"],
+          ["/admin", "Overview"],
           ["/admin/users", "Users"],
           ["/admin/audit", "Audit"],
         ],
