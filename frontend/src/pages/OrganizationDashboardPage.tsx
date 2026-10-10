@@ -144,7 +144,18 @@ export function OrganizationDashboardPage() {
                     <strong>{alert.title}</strong>
                     <p>{alert.message}</p>
                   </div>
-                  <span className={`severity-badge ${alert.severity}`}>{alert.severity}</span>
+                  {alert.entity_type === "collection_assignment" ? (
+                    <Link
+                      className="text-link"
+                      to={`/organization/review?tab=exceptions&assignment=${alert.entity_id}`}
+                    >
+                      Review
+                    </Link>
+                  ) : alert.entity_type === "collection_request" ? (
+                    <Link className="text-link" to="/organization/dispatch">Review</Link>
+                  ) : (
+                    <Link className="text-link" to="/organization/monitoring">Inspect</Link>
+                  )}
                 </article>
               ))}
             </div>
