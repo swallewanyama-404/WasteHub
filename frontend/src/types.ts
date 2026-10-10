@@ -127,6 +127,7 @@ export interface Vehicle {
   zone_id: number | null;
   registration_number: string;
   vehicle_type: string;
+  capacity_tons: number | null;
   status: string;
   is_active: boolean;
   created_at: string;
