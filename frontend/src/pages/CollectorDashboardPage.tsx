@@ -112,12 +112,6 @@ export function CollectorDashboardPage() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    return () => {
-      Object.values(pendingEvidence).forEach((item) => URL.revokeObjectURL(item.previewUrl));
-    };
-  }, [pendingEvidence]);
-
   async function runAction(
     assignmentId: number,
     action: () => Promise<unknown>,
