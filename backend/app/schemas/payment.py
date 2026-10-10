@@ -10,6 +10,10 @@ class PaymentCreate(BaseModel):
     method: str = Field(pattern="^(mobile_money|card|cash)$")
 
 
+class PaymentConfirmation(BaseModel):
+    settlement_reference: str = Field(min_length=2, max_length=180)
+
+
 class PaymentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
