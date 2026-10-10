@@ -9,7 +9,10 @@ export interface User {
   id: number;
   full_name: string;
   email: string;
+  phone_number: string | null;
   role: UserRole;
+  provider_id: number | null;
+  zone_id: number | null;
   client_type: string | null;
   default_address: string | null;
   default_latitude: number | null;
@@ -27,6 +30,7 @@ export interface TokenResponse {
 export interface CollectionRequest {
   id: number;
   resident_id: number;
+  zone_id: number | null;
   request_type: string;
   priority: string;
   status: string;
@@ -37,8 +41,12 @@ export interface CollectionRequest {
   quantity_estimate: number | null;
   quantity_unit: string | null;
   reason: string | null;
+  preferred_date: string | null;
+  preferred_time_window: string | null;
   scheduled_at: string | null;
   completed_at: string | null;
+  cancellation_reason: string | null;
+  cancelled_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +56,9 @@ export interface CollectorAssignment {
   request_id: number;
   provider_id: number;
   collector_id: number;
+  vehicle_id: number | null;
+  resident_name: string;
+  resident_phone: string | null;
   pickup_address: string;
   waste_type: string;
   priority: string;
@@ -98,13 +109,13 @@ export interface OrganizationAlert {
   minutes_overdue: number | null;
 }
 
-
 export interface Provider {
   id: number;
   name: string;
   code: string;
   contact_phone: string | null;
   contact_email: string | null;
+  approval_status: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -113,6 +124,7 @@ export interface Provider {
 export interface Vehicle {
   id: number;
   provider_id: number;
+  zone_id: number | null;
   registration_number: string;
   vehicle_type: string;
   status: string;
@@ -175,6 +187,8 @@ export interface ResidentRequestTracking {
   request_status: string;
   assignment_id: number | null;
   assignment_status: string | null;
+  collector_name: string | null;
+  collector_phone: string | null;
   tracking_active: boolean;
   vehicle_registration_number: string | null;
   truck_latitude: number | null;
@@ -223,6 +237,7 @@ export interface Complaint {
   resolution: string | null;
   assigned_to: number | null;
   resolved_at: string | null;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -250,15 +265,20 @@ export interface Evidence {
 export interface OperationsQueueItem {
   request_id: number;
   resident_id: number;
+  zone_id: number | null;
+  resident_name: string;
+  resident_phone: string | null;
   pickup_address: string;
   waste_type: string;
   priority: string;
+  request_type: string;
   request_status: string;
   pickup_latitude: number | null;
   pickup_longitude: number | null;
   assignment_id: number | null;
   collector_id: number | null;
   provider_id: number | null;
+  vehicle_id: number | null;
   assignment_status: string | null;
   created_at: string;
 }
@@ -267,10 +287,22 @@ export interface CollectorWorkload {
   collector_id: number;
   full_name: string;
   email: string;
+  phone_number: string | null;
+  provider_id: number | null;
+  zone_id: number | null;
   total_active_assignments: number;
   pending_assignments: number;
   accepted_assignments: number;
   in_progress_assignments: number;
+}
+
+export interface AvailableVehicle {
+  vehicle_id: number;
+  provider_id: number;
+  zone_id: number | null;
+  registration_number: string;
+  vehicle_type: string;
+  status: string;
 }
 
 export interface AssignmentMonitoring {
@@ -278,12 +310,18 @@ export interface AssignmentMonitoring {
   request_id: number;
   provider_id: number;
   collector_id: number;
+  vehicle_id: number | null;
+  zone_id: number | null;
+  resident_name: string;
+  resident_phone: string | null;
   pickup_address: string;
+  waste_type: string;
   priority: string;
   assignment_status: string;
   request_status: string;
   scheduled_at: string | null;
   assigned_at: string;
+  completed_at: string | null;
   is_late: boolean;
   minutes_late: number | null;
 }
@@ -342,7 +380,6 @@ export interface AuditLog {
   created_at: string;
 }
 
-
 export interface RouteProgress {
   assignment_id: number;
   request_id: number;
@@ -356,17 +393,19 @@ export interface RouteProgress {
   remaining_stops: number;
 }
 
-
 export interface Zone {
   id: number;
   name: string;
   code: string;
+  municipality: string | null;
   description: string | null;
+  center_latitude: number | null;
+  center_longitude: number | null;
+  radius_km: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
-
 
 export interface ResidentServicePlan {
   client_type: string;
@@ -378,4 +417,44 @@ export interface ResidentServicePlan {
   urgent_pickup_fee_ugx: string;
   month_paid: boolean;
   collection_enabled: boolean;
+}
+
+export interface ProviderFleetItem {
+  registration_number: string;
+  vehicle_type: string;
+  capacity_tons: number | null;
+  zone_id: number;
+}
+
+export interface ProviderApplication {
+  id: number;
+  organization_name: string;
+  proposed_code: string;
+  registered_address: string;
+  contact_email: string;
+  contact_phone: string;
+  website: string | null;
+  company_registration_number: string;
+  tin: string;
+  nema_license_number: string;
+  kcca_trading_license_number: string;
+  tax_clearance_reference: string;
+  powers_of_attorney_reference: string;
+  gazette_reference: string | null;
+  years_experience: number;
+  daily_capacity_tons: number;
+  disposal_facility_name: string;
+  disposal_facility_location: string;
+  disposal_authorization_reference: string;
+  monitoring_capability: string;
+  client_service_hours: number;
+  requested_zone_ids: number[];
+  fleet: ProviderFleetItem[];
+  supervisor_user_id: number;
+  status: string;
+  review_notes: string | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  provider_id: number | null;
+  submitted_at: string;
 }
