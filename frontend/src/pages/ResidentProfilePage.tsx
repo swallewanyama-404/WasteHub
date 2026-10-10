@@ -22,6 +22,7 @@ export function ResidentProfilePage() {
   const [profile, setProfile] = useState<User | null>(user);
   const [plan, setPlan] = useState<ResidentServicePlan | null>(null);
   const [fullName, setFullName] = useState(user?.full_name ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone_number ?? "");
   const [clientType, setClientType] = useState(user?.client_type ?? "household");
   const [address, setAddress] = useState(user?.default_address ?? "");
   const [latitude, setLatitude] = useState<number | null>(user?.default_latitude ?? null);
@@ -40,6 +41,7 @@ export function ResidentProfilePage() {
         setProfile(profileData);
         setPlan(planData);
         setFullName(profileData.full_name);
+        setPhoneNumber(profileData.phone_number ?? "");
         setClientType(profileData.client_type ?? "household");
         setAddress(profileData.default_address ?? "");
         setLatitude(profileData.default_latitude);
@@ -93,6 +95,7 @@ export function ResidentProfilePage() {
           method: "PATCH",
           body: JSON.stringify({
             full_name: fullName,
+            phone_number: phoneNumber,
             client_type: clientType,
             default_address: address,
             default_latitude: latitude,
@@ -133,6 +136,7 @@ export function ResidentProfilePage() {
           <span className="card-label">Account</span>
           <strong>{profile?.full_name ?? fullName}</strong>
           <p>{profile?.email}</p>
+          <p>{profile?.phone_number || "Phone number not set"}</p>
         </article>
 
         <article className="profile-summary-card">
@@ -178,6 +182,18 @@ export function ResidentProfilePage() {
 
           <div className="form-grid-two">
             <label>
+              Phone number
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                required
+                minLength={7}
+                placeholder="+256 7XX XXX XXX"
+              />
+              <small>Collectors can use this number only when coordinating an assigned pickup.</small>
+            </label>
+            <label>
               Client type
               <select value={clientType} onChange={(event) => setClientType(event.target.value)}>
                 {clientTypes.map(([value, label]) => (
@@ -187,11 +203,12 @@ export function ResidentProfilePage() {
               <small>This controls the default waste category suggested for new pickups.</small>
             </label>
 
-            <label>
-              Main service address
-              <input value={address} onChange={(event) => setAddress(event.target.value)} required />
-            </label>
           </div>
+
+          <label>
+            Main service address
+            <input value={address} onChange={(event) => setAddress(event.target.value)} required />
+          </label>
 
           <div className="location-box profile-location-box">
             <div>
