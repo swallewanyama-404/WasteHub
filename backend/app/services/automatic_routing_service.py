@@ -50,7 +50,30 @@ def _active_assignment_count(db: Session, collector_id: int) -> int:
     )
 
 
-def _select_provider(db: Session, zone_id: int) -> ServiceProvider | None:
+def _select_provider(
+    db: Session,
+    zone_id: int,
+    preferred_provider_id: int | None = None,
+) -> ServiceProvider | None:
+    if preferred_provider_id is not None:
+        preferred = db.get(ServiceProvider, preferred_provider_id)
+        if (
+            preferred is not None
+            and preferred.is_active
+            and preferred.approval_status == "approved"
+        ):
+            link = db.scalar(
+                select(ProviderZone.id)
+                .where(
+                    ProviderZone.provider_id == preferred.id,
+                    ProviderZone.zone_id == zone_id,
+                    ProviderZone.is_active.is_(True),
+                )
+                .limit(1)
+            )
+            if link is not None:
+                return preferred
+
     provider_ids = list(
         db.scalars(
             select(ProviderZone.provider_id).where(
@@ -175,7 +198,12 @@ def auto_assign_routine_request(
     if active is not None:
         return active
 
-    provider = _select_provider(db, request.zone_id)
+    resident = db.get(User, request.resident_id)
+    provider = _select_provider(
+        db,
+        request.zone_id,
+        preferred_provider_id=(resident.provider_id if resident is not None else None),
+    )
     if provider is None:
         return None
 
@@ -185,6 +213,9 @@ def auto_assign_routine_request(
 
     if collector is None or vehicle is None or supervisor is None:
         return None
+
+    if resident is not None:
+        resident.provider_id = provider.id
 
     assignment = CollectionAssignment(
         request_id=request.id,
