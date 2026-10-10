@@ -1,12 +1,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { StatePanel } from "../components/StatePanel";
 import { apiRequest, ApiError } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
-import type {
-  AnalyticsSummary,
-  Complaint,
-} from "../types";
+import type { AnalyticsSummary, Complaint } from "../types";
 
 interface PaymentSummary {
   total_payments: number;
@@ -64,6 +62,32 @@ export function OrganizationServiceDeskPage() {
     [complaints, statusFilter],
   );
 
+  async function startReview(complaint: Complaint) {
+    setBusyId(complaint.id);
+    setError("");
+    setNotice("");
+
+    try {
+      await apiRequest(
+        `/complaints/${complaint.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: "in_review",
+            assigned_to: null,
+          }),
+        },
+        token,
+      );
+      setNotice(`Complaint #${complaint.id} is now under investigation.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not start complaint review.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function submitResolution(event: FormEvent) {
     event.preventDefault();
     if (!resolving || !resolution.trim()) return;
@@ -84,7 +108,9 @@ export function OrganizationServiceDeskPage() {
         },
         token,
       );
-      setNotice(`Complaint #${resolving.id} was resolved.`);
+      setNotice(
+        `Complaint #${resolving.id} is marked resolved and is waiting for the resident to confirm closure.`,
+      );
       setResolving(null);
       setResolution("");
       await load();
@@ -101,7 +127,9 @@ export function OrganizationServiceDeskPage() {
         <div>
           <p className="eyebrow">Service desk</p>
           <h1>Resident service quality</h1>
-          <p className="muted">Handle complaints, watch customer satisfaction and review payment operations.</p>
+          <p className="muted">
+            Investigate resident reports first, take corrective action, then resolve the case for resident confirmation.
+          </p>
         </div>
         <button className="button secondary" onClick={() => void load()}>Refresh</button>
       </div>
@@ -115,7 +143,7 @@ export function OrganizationServiceDeskPage() {
         <>
           <section className="service-desk-kpis">
             <article>
-              <span>Open complaints</span>
+              <span>Open / in review</span>
               <strong>{analytics?.open_complaints ?? 0}</strong>
               <small>{analytics?.total_complaints ?? 0} complaints overall</small>
             </article>
@@ -146,8 +174,8 @@ export function OrganizationServiceDeskPage() {
                 <option value="open">Needs action</option>
                 <option value="all">All complaints</option>
                 <option value="in_review">In review</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
+                <option value="resolved">Resolved — awaiting resident</option>
+                <option value="closed">Closed by resident</option>
               </select>
             </div>
 
@@ -164,28 +192,79 @@ export function OrganizationServiceDeskPage() {
                       <div className="section-heading">
                         <div>
                           <strong>Complaint #{complaint.id}</strong>
-                          <p>{complaint.category.replaceAll("_", " ")} · resident #{complaint.resident_id}</p>
+                          <p>
+                            {complaint.category.replaceAll("_", " ")}
+                            {complaint.request_id ? ` · request #${complaint.request_id}` : " · general service"}
+                          </p>
                         </div>
-                        <span className={`status-badge status-${complaint.status}`}>{complaint.status.replaceAll("_", " ")}</span>
+                        <span className={`status-badge status-${complaint.status}`}>
+                          {complaint.status.replaceAll("_", " ")}
+                        </span>
                       </div>
+
                       <p className="case-description">{complaint.description}</p>
+
+                      {complaint.status === "open" ? (
+                        <div className="case-action-panel">
+                          <div>
+                            <strong>Step 1 · Investigate</strong>
+                            <p>Verify the related collection history before deciding the outcome.</p>
+                          </div>
+                          <button
+                            className="button primary"
+                            disabled={busyId === complaint.id}
+                            onClick={() => void startReview(complaint)}
+                          >
+                            Start review
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {complaint.status === "in_review" ? (
+                        <div className="case-action-panel in-review">
+                          <div>
+                            <strong>Investigation in progress</strong>
+                            <p>
+                              {complaint.category === "missed_collection"
+                                ? "If the pickup was missed, reassign it and wait for successful completion before resolving this complaint."
+                                : "Review service records and document the corrective action before resolving."}
+                            </p>
+                          </div>
+                          <div className="button-row">
+                            {complaint.category === "missed_collection" && complaint.request_id ? (
+                              <Link className="button secondary" to="/organization/review?tab=exceptions">
+                                Review missed pickup
+                              </Link>
+                            ) : null}
+                            <button
+                              className="button primary"
+                              disabled={busyId === complaint.id}
+                              onClick={() => {
+                                setResolving(complaint);
+                                setResolution(complaint.resolution ?? "");
+                              }}
+                            >
+                              Resolve after verification
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
                       {complaint.resolution ? (
                         <div className="case-resolution">
-                          <strong>Resolution</strong>
+                          <strong>Recorded resolution</strong>
                           <p>{complaint.resolution}</p>
                         </div>
                       ) : null}
-                      {!["resolved", "closed"].includes(complaint.status) ? (
-                        <button
-                          className="button primary"
-                          disabled={busyId === complaint.id}
-                          onClick={() => {
-                            setResolving(complaint);
-                            setResolution(complaint.resolution ?? "");
-                          }}
-                        >
-                          Resolve case
-                        </button>
+
+                      {complaint.status === "resolved" ? (
+                        <p className="case-progress-note">
+                          Operations marked this resolved. The resident must confirm the outcome before the case is closed.
+                        </p>
+                      ) : null}
+
+                      {complaint.status === "closed" ? (
+                        <p className="success-text">Resident confirmed the service outcome and closed this case.</p>
                       ) : null}
                     </div>
                   </article>
@@ -218,10 +297,12 @@ export function OrganizationServiceDeskPage() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <p className="eyebrow">Resolve complaint #{resolving.id}</p>
-            <h2>Record the service outcome</h2>
-            <p className="muted">Write a clear resolution that can also be shown back to the resident.</p>
+            <h2>Record the verified outcome</h2>
+            <p className="muted">
+              WasteHub will not allow a missed-collection complaint to be resolved until its linked pickup has actually been completed.
+            </p>
             <label>
-              Resolution
+              Investigation outcome / resolution
               <textarea
                 autoFocus
                 rows={5}
@@ -229,11 +310,12 @@ export function OrganizationServiceDeskPage() {
                 minLength={3}
                 value={resolution}
                 onChange={(event) => setResolution(event.target.value)}
+                placeholder="State what you verified, what corrective action was taken, and the final service outcome."
               />
             </label>
             <div className="button-row modal-actions">
-              <button type="button" className="button secondary" onClick={() => setResolving(null)}>Cancel</button>
-              <button className="button primary">Resolve complaint</button>
+              <button type="button" className="button secondary" onClick={() => setResolving(null)}>Continue review</button>
+              <button className="button primary">Mark resolved</button>
             </div>
           </form>
         </div>
