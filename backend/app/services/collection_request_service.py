@@ -212,7 +212,7 @@ def cancel_request(
                 title="Refund review started",
                 message=(
                     f"Request #{request.id} was cancelled after payment. "
-                    "The demo environment marked the payment for refund review."
+                    "The payment has been marked for refund review."
                 ),
             )
         elif payment.status in {"pending", "processing"}:
