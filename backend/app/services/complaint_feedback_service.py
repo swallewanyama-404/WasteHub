@@ -72,7 +72,10 @@ def get_all_complaints(db: Session, actor: User | None = None) -> list[Complaint
 
         statement = (
             statement.join(User, User.id == Complaint.resident_id)
-            .where(User.zone_id.in_(zone_ids))
+            .where(
+                User.zone_id.in_(zone_ids),
+                (User.provider_id == actor.provider_id) | (User.provider_id.is_(None)),
+            )
         )
 
     return list(
@@ -100,7 +103,12 @@ def update_complaint(
         if actor.provider_id is None:
             raise HTTPException(status_code=403, detail="Supervisor is not linked to a provider")
         resident = db.get(User, complaint.resident_id)
-        if resident is None or resident.zone_id not in provider_zone_ids(db, actor.provider_id):
+        if resident is None:
+            raise HTTPException(status_code=403, detail="Resident account is unavailable")
+        if resident.provider_id is not None:
+            if resident.provider_id != actor.provider_id:
+                raise HTTPException(status_code=403, detail="This complaint belongs to another service provider")
+        elif resident.zone_id not in provider_zone_ids(db, actor.provider_id):
             raise HTTPException(status_code=403, detail="This complaint is outside your organization's service zones")
 
     if data.assigned_to is not None:
