@@ -47,6 +47,7 @@ class AvailableVehicleResponse(BaseModel):
     zone_id: int | None
     registration_number: str
     vehicle_type: str
+    capacity_tons: float | None
     status: str
 
 
