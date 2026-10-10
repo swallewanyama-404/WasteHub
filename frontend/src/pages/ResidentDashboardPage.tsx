@@ -21,6 +21,13 @@ const wasteOptions = [
   "General mixed waste",
 ];
 
+const cancellableStatuses = new Set([
+  "payment_pending",
+  "pending",
+  "assessed",
+  "scheduled",
+]);
+
 export function ResidentDashboardPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +36,11 @@ export function ResidentDashboardPage() {
   const [requests, setRequests] = useState<CollectionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelRequest, setCancelRequest] = useState<CollectionRequest | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [busyRequestId, setBusyRequestId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const [wasteType, setWasteType] = useState("");
   const [priority, setPriority] = useState("high");
@@ -71,6 +82,7 @@ export function ResidentDashboardPage() {
     event.preventDefault();
     setSubmitting(true);
     setError("");
+    setNotice("");
 
     try {
       if (!profile?.default_address) {
@@ -119,6 +131,36 @@ export function ResidentDashboardPage() {
     }
   }
 
+  async function confirmCancellation(event: FormEvent) {
+    event.preventDefault();
+    if (!cancelRequest || !cancelReason.trim()) return;
+
+    setBusyRequestId(cancelRequest.id);
+    setError("");
+    setNotice("");
+
+    try {
+      await apiRequest<CollectionRequest>(
+        `/collection-requests/${cancelRequest.id}/cancel`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reason: cancelReason.trim() }),
+        },
+        token,
+      );
+      setNotice(
+        `Request #${cancelRequest.id} was cancelled. If it had already been paid, its payment is now flagged for refund review in this demo.`,
+      );
+      setCancelRequest(null);
+      setCancelReason("");
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not cancel the request.");
+    } finally {
+      setBusyRequestId(null);
+    }
+  }
+
   return (
     <AppShell>
       <div className="page-header">
@@ -126,13 +168,13 @@ export function ResidentDashboardPage() {
           <p className="eyebrow">Pickup requests</p>
           <h1>Request an extra collection</h1>
           <p className="muted">
-            Your normal weekly pickup follows the routine schedule automatically.
-            Use this page only when you need collection before that day.
+            Routine weekly pickup is handled automatically. Use this page when you need an extra collection before your regular day.
           </p>
         </div>
       </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
+      {notice ? <div className="success-banner">{notice}</div> : null}
 
       {!profile?.default_address ? (
         <div className="warning-banner">
@@ -178,7 +220,7 @@ export function ResidentDashboardPage() {
                     <option value={item} key={item}>{item}</option>
                   ))}
                 </select>
-                <small>WasteHub suggests a type from your profile, but you can change it for this pickup.</small>
+                <small>Suggested from your profile; change it when this pickup contains something different.</small>
               </label>
 
               <label>
@@ -211,9 +253,7 @@ export function ResidentDashboardPage() {
 
             <div className="payment-gate-note">
               <span>⚡</span>
-              <p>
-                An extra pickup is released to dispatch only after its separate pickup payment is completed.
-              </p>
+              <p>An extra pickup is released to dispatch only after its separate pickup payment is completed.</p>
             </div>
 
             <button className="button primary large" disabled={submitting || !profile?.default_address}>
@@ -236,12 +276,12 @@ export function ResidentDashboardPage() {
           ) : urgentRequests.length === 0 ? (
             <StatePanel
               title="No extra pickups yet"
-              message="Routine weekly collections are not listed here because they happen automatically on your service schedule."
+              message="Routine weekly collections are handled automatically and do not need a request."
             />
           ) : (
             <div className="list-stack">
               {urgentRequests.map((request) => (
-                <article className="request-history-card" key={request.id}>
+                <article className="request-history-card request-history-card-actions" key={request.id}>
                   <div>
                     <div className="request-history-title">
                       <strong>Request #{request.id}</strong>
@@ -251,14 +291,65 @@ export function ResidentDashboardPage() {
                     </div>
                     <p>{request.waste_type}</p>
                     <small>{new Date(request.created_at).toLocaleString()}</small>
+                    {request.cancellation_reason ? (
+                      <small className="cancelled-reason">Cancelled: {request.cancellation_reason}</small>
+                    ) : null}
                   </div>
-                  <Link className="text-link" to="/resident/tracking">Track →</Link>
+                  <div className="request-card-actions">
+                    {!["cancelled"].includes(request.status) ? (
+                      <Link className="text-link" to="/resident/tracking">Track</Link>
+                    ) : null}
+                    {cancellableStatuses.has(request.status) ? (
+                      <button
+                        className="text-button danger-text"
+                        disabled={busyRequestId === request.id}
+                        onClick={() => {
+                          setCancelRequest(request);
+                          setCancelReason("");
+                        }}
+                      >
+                        Cancel request
+                      </button>
+                    ) : null}
+                  </div>
                 </article>
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {cancelRequest ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setCancelRequest(null)}>
+          <form
+            className="action-modal"
+            onSubmit={confirmCancellation}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="eyebrow">Cancel request #{cancelRequest.id}</p>
+            <h2>Are you sure you no longer need this pickup?</h2>
+            <p className="muted">
+              The collector will be notified immediately. A paid urgent pickup is sent for refund review in the demo environment.
+            </p>
+            <label>
+              Reason for cancellation
+              <textarea
+                autoFocus
+                required
+                minLength={2}
+                rows={4}
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder="For example: waste was already collected or the pickup is no longer needed."
+              />
+            </label>
+            <div className="button-row modal-actions">
+              <button type="button" className="button secondary" onClick={() => setCancelRequest(null)}>Keep request</button>
+              <button className="button danger">Cancel pickup</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </AppShell>
   );
 }
