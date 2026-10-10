@@ -20,6 +20,7 @@ const icons: Record<string, string> = {
   Overview: "◆",
   Users: "●",
   Organizations: "▦",
+  Zones: "⌖",
   Audit: "☷",
 };
 
@@ -59,6 +60,7 @@ export function WorkspaceNav() {
           ["/admin", "Overview"],
           ["/admin/users", "Users"],
           ["/admin/organizations", "Organizations"],
+          ["/admin/zones", "Zones"],
           ["/admin/audit", "Audit"],
         ],
       },
