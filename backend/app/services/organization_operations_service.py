@@ -174,6 +174,7 @@ def get_available_vehicles(db: Session, actor: User) -> list[AvailableVehicleRes
             zone_id=vehicle.zone_id,
             registration_number=vehicle.registration_number,
             vehicle_type=vehicle.vehicle_type,
+            capacity_tons=float(vehicle.capacity_tons) if vehicle.capacity_tons is not None else None,
             status=_status_value(vehicle.status),
         )
         for vehicle in vehicles
