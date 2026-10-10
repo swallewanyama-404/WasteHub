@@ -4,7 +4,7 @@ import { AppShell } from "../components/AppShell";
 import { StatePanel } from "../components/StatePanel";
 import { apiRequest, ApiError } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
-import type { AnalyticsSummary, Complaint } from "../types";
+import type { AnalyticsSummary, Complaint, Payment } from "../types";
 
 interface PaymentSummary {
   total_payments: number;
@@ -19,6 +19,9 @@ export function OrganizationServiceDeskPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [payments, setPayments] = useState<PaymentSummary | null>(null);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [confirming, setConfirming] = useState<Payment | null>(null);
+  const [settlementReference, setSettlementReference] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const [resolving, setResolving] = useState<Complaint | null>(null);
   const [resolution, setResolution] = useState("");
@@ -32,14 +35,16 @@ export function OrganizationServiceDeskPage() {
     setError("");
 
     try {
-      const [analyticsData, paymentData, complaintData] = await Promise.all([
+      const [analyticsData, paymentData, pendingPaymentData, complaintData] = await Promise.all([
         apiRequest<AnalyticsSummary>("/admin/analytics", {}, token),
         apiRequest<PaymentSummary>("/payments/summary", {}, token),
+        apiRequest<Payment[]>("/payments/pending", {}, token),
         apiRequest<Complaint[]>("/complaints", {}, token),
       ]);
 
       setAnalytics(analyticsData);
       setPayments(paymentData);
+      setPendingPayments(pendingPaymentData);
       setComplaints(complaintData);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load the service desk.");
@@ -83,6 +88,36 @@ export function OrganizationServiceDeskPage() {
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start complaint review.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmSettlement(event: FormEvent) {
+    event.preventDefault();
+    if (!confirming || !settlementReference.trim()) return;
+
+    setBusyId(confirming.id);
+    setError("");
+    setNotice("");
+
+    try {
+      await apiRequest<Payment>(
+        `/payments/${confirming.id}/confirm`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            settlement_reference: settlementReference.trim(),
+          }),
+        },
+        token,
+      );
+      setNotice(`Payment #${confirming.id} was verified and the resident service was activated.`);
+      setConfirming(null);
+      setSettlementReference("");
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not verify the payment.");
     } finally {
       setBusyId(null);
     }
@@ -162,6 +197,51 @@ export function OrganizationServiceDeskPage() {
               <strong className="money-kpi">UGX {Number(payments?.successful_amount_ugx ?? 0).toLocaleString()}</strong>
               <small>{payments?.successful_payments ?? 0} successful payments</small>
             </article>
+          </section>
+
+          <section className="panel payment-operations-summary">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Payment verification</p>
+                <h2>Settlements awaiting confirmation</h2>
+                <p className="muted">
+                  Verify the resident's Mobile Money, card or office settlement reference before activating service.
+                </p>
+              </div>
+              <span className="status-badge">{pendingPayments.length} pending</span>
+            </div>
+
+            {pendingPayments.length === 0 ? (
+              <StatePanel title="No payments waiting for verification" />
+            ) : (
+              <div className="list-stack">
+                {pendingPayments.map((payment) => (
+                  <article className="payment-row" key={payment.id}>
+                    <div>
+                      <strong>
+                        {payment.payment_type === "monthly_service"
+                          ? `Monthly service · resident #${payment.resident_id}`
+                          : `Extra pickup #${payment.request_id}`}
+                      </strong>
+                      <p className="muted">
+                        {payment.currency} {Number(payment.amount).toLocaleString()} · {payment.method.replaceAll("_", " ")}
+                      </p>
+                      <small className="code-text">{payment.external_reference}</small>
+                    </div>
+                    <button
+                      className="button primary"
+                      disabled={busyId === payment.id}
+                      onClick={() => {
+                        setConfirming(payment);
+                        setSettlementReference("");
+                      }}
+                    >
+                      Verify settlement
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="panel service-case-panel">
@@ -277,7 +357,7 @@ export function OrganizationServiceDeskPage() {
             <div>
               <p className="eyebrow">Payment operations</p>
               <h2>Transaction health</h2>
-              <p className="muted">Current classroom environment uses the WasteHub demo payment adapter.</p>
+              <p className="muted">Payments remain pending until an authorised operations user verifies the settlement reference.</p>
             </div>
             <div className="payment-health-grid">
               <div><span>Total</span><strong>{payments?.total_payments ?? 0}</strong></div>
@@ -288,6 +368,37 @@ export function OrganizationServiceDeskPage() {
           </section>
         </>
       )}
+
+      {confirming ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setConfirming(null)}>
+          <form
+            className="action-modal"
+            onSubmit={confirmSettlement}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="eyebrow">Verify payment #{confirming.id}</p>
+            <h2>Confirm settlement</h2>
+            <p className="muted">
+              Enter the Mobile Money transaction ID, card settlement reference or office receipt used to verify this payment.
+            </p>
+            <label>
+              Settlement reference
+              <input
+                autoFocus
+                required
+                minLength={2}
+                value={settlementReference}
+                onChange={(event) => setSettlementReference(event.target.value)}
+                placeholder="e.g. MTN-123456789 or receipt number"
+              />
+            </label>
+            <div className="button-row modal-actions">
+              <button type="button" className="button secondary" onClick={() => setConfirming(null)}>Cancel</button>
+              <button className="button primary" disabled={busyId === confirming.id}>Confirm payment</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {resolving ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setResolving(null)}>
