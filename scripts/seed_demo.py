@@ -101,6 +101,7 @@ def ensure_vehicle(db, provider_id, zone_id, registration_number):
             zone_id=zone_id,
             registration_number=registration_number,
             vehicle_type="Waste Collection Truck",
+            capacity_tons=8,
             status=VehicleStatus.AVAILABLE,
             is_active=True,
         )
@@ -109,6 +110,7 @@ def ensure_vehicle(db, provider_id, zone_id, registration_number):
     else:
         vehicle.provider_id = provider_id
         vehicle.zone_id = zone_id
+        vehicle.capacity_tons = 8
         vehicle.status = VehicleStatus.AVAILABLE
         vehicle.is_active = True
 
