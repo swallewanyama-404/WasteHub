@@ -31,6 +31,7 @@ class RegisterRequest(BaseModel):
 class ResidentProfileUpdate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
+    full_name: str = Field(min_length=2, max_length=150)
     client_type: str = Field(max_length=40)
     default_address: str = Field(min_length=5, max_length=500)
     default_latitude: float = Field(ge=-90, le=90)
