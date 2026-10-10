@@ -15,6 +15,7 @@ from backend.app.models.collection_event import (
 from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestStatus,
+    CollectionRequestType,
 )
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
@@ -421,6 +422,14 @@ def complete_collection_stop(
         entity_id=assignment.id,
         details={"request_id": collection_request.id},
     )
+
+    if collection_request.request_type == CollectionRequestType.ROUTINE:
+        from backend.app.services.automatic_routing_service import schedule_next_routine_collection
+        schedule_next_routine_collection(
+            db,
+            collection_request.resident_id,
+            after_date=collection_request.preferred_date or now.date(),
+        )
 
     db.commit()
     db.refresh(assignment)
