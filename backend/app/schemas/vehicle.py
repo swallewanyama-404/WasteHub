@@ -7,6 +7,7 @@ from backend.app.models.vehicle import VehicleStatus
 
 class VehicleCreate(BaseModel):
     provider_id: int
+    zone_id: int | None = None
     registration_number: str = Field(min_length=2, max_length=30)
     vehicle_type: str = Field(min_length=2, max_length=100)
     status: VehicleStatus = VehicleStatus.AVAILABLE
@@ -22,6 +23,7 @@ class VehicleResponse(BaseModel):
 
     id: int
     provider_id: int
+    zone_id: int | None
     registration_number: str
     vehicle_type: str
     status: VehicleStatus
