@@ -211,6 +211,7 @@ def _approve_application(
                 zone_id=int(item["zone_id"]),
                 registration_number=registration,
                 vehicle_type=str(item["vehicle_type"]),
+                capacity_tons=float(item["capacity_tons"]),
                 status=VehicleStatus.AVAILABLE,
                 is_active=True,
             )
