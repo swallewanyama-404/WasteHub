@@ -17,6 +17,7 @@ export function ResidentPaymentsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
+
     try {
       const [paymentData, planData] = await Promise.all([
         apiRequest<Payment[]>("/payments/mine", {}, token),
@@ -38,6 +39,7 @@ export function ResidentPaymentsPage() {
   async function payMonthly() {
     setBusy(true);
     setError("");
+
     try {
       await apiRequest<Payment>(
         "/payments",
@@ -61,6 +63,7 @@ export function ResidentPaymentsPage() {
   async function completeDemo(paymentId: number) {
     setBusy(true);
     setError("");
+
     try {
       await apiRequest<Payment>(
         `/payments/${paymentId}/demo-success`,
@@ -86,42 +89,39 @@ export function ResidentPaymentsPage() {
       <div className="page-header">
         <div>
           <p className="eyebrow">Billing & payments</p>
-          <h1>Keep routine collection active. Pay extras separately.</h1>
+          <h1>Payments</h1>
           <p className="muted">
-            Monthly service covers your weekly routine pickups. Urgent pickups use a
-            separate one-time payment.
+            Manage your monthly collection fee and complete any pending extra-pickup payment.
           </p>
         </div>
       </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <section className="billing-grid">
-        <article className="plan-card">
-          <div className="section-heading">
-            <div>
-              <span className="summary-icon">▦</span>
-              <p className="eyebrow">Routine service</p>
+      <section className="plan-card monthly-payment-card">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Monthly service</p>
+            <h2>Routine collection fee</h2>
+          </div>
+          <span className={plan?.month_paid ? "plan-status active" : "plan-status due"}>
+            {plan?.month_paid ? "Paid" : "Payment due"}
+          </span>
+        </div>
+
+        <div className="monthly-payment-layout">
+          <div>
+            <div className="price-line clean-price-line">
+              <strong>UGX {Number(plan?.monthly_fee_ugx ?? 30000).toLocaleString()}</strong>
+              <span>/ month</span>
             </div>
-            <span className={plan?.month_paid ? "plan-status active" : "plan-status due"}>
-              {plan?.month_paid ? "Active this month" : "Payment due"}
-            </span>
-          </div>
-          <h2>Weekly Collection Plan</h2>
-          <p>One monthly payment keeps your normal weekly collection eligible for the current month.</p>
-          <div className="price-line">
-            <strong>UGX {Number(plan?.monthly_fee_ugx ?? 30000).toLocaleString()}</strong>
-            <span>/ month</span>
-          </div>
-          <div className="plan-features">
-            <span>✓ Weekly scheduled pickup</span>
-            <span>✓ Reminder notifications</span>
-            <span>✓ Live collection tracking</span>
-            <span>✓ Service history</span>
+            <p className="muted">
+              Covers your routine weekly collection for the current month.
+            </p>
           </div>
 
           {!plan?.month_paid ? (
-            <>
+            <div className="monthly-payment-action">
               <label className="inline-payment-method">
                 Payment method
                 <select value={method} onChange={(event) => setMethod(event.target.value)}>
@@ -130,49 +130,37 @@ export function ResidentPaymentsPage() {
                   <option value="cash">Cash / office settlement</option>
                 </select>
               </label>
-              <button className="button primary large" disabled={busy} onClick={() => void payMonthly()}>
-                {busy ? "Starting payment…" : "Pay this month's service"}
+              <button className="button primary" disabled={busy} onClick={() => void payMonthly()}>
+                {busy ? "Starting payment…" : "Pay monthly fee"}
               </button>
-            </>
-          ) : (
-            <div className="success-banner">Weekly collection is enabled for this month.</div>
-          )}
-        </article>
-
-        <article className="plan-card urgent-payment-card">
-          <div className="section-heading">
-            <div>
-              <span className="summary-icon accent-icon">⚡</span>
-              <p className="eyebrow">On-demand service</p>
             </div>
-            <span className="fee-pill">One-time fee</span>
-          </div>
-          <h2>Urgent Pickup</h2>
-          <p>Extra collection outside your weekly routine is paid immediately before dispatch.</p>
-          <div className="price-line">
-            <strong>UGX {Number(plan?.urgent_pickup_fee_ugx ?? 15000).toLocaleString()}</strong>
-            <span>/ request</span>
-          </div>
-          <p className="muted">
-            Create urgent pickups from your Resident home. The request stays payment-pending until payment succeeds.
-          </p>
-        </article>
+          ) : (
+            <div className="paid-state">
+              <span>✓</span>
+              <div>
+                <strong>Service active</strong>
+                <p>Your routine collection is enabled for this month.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {pendingUrgent.length > 0 ? (
-        <section className="panel attention-panel">
+        <section className="panel attention-panel section-spacer">
           <div className="section-heading">
             <div>
               <p className="eyebrow">Action required</p>
-              <h2>Finish urgent pickup payment</h2>
+              <h2>Pending pickup payment</h2>
             </div>
             <span className="status-badge">{pendingUrgent.length} pending</span>
           </div>
+
           <div className="list-stack">
             {pendingUrgent.map((payment) => (
               <article className="payment-row" key={payment.id}>
                 <div>
-                  <strong>Urgent pickup request #{payment.request_id}</strong>
+                  <strong>Extra pickup request #{payment.request_id}</strong>
                   <p className="muted">
                     {payment.currency} {Number(payment.amount).toLocaleString()} · {payment.method.replaceAll("_", " ")}
                   </p>
@@ -186,11 +174,11 @@ export function ResidentPaymentsPage() {
         </section>
       ) : null}
 
-      <section className="panel">
+      <section className="panel section-spacer">
         <div className="section-heading">
           <div>
             <p className="eyebrow">Payment history</p>
-            <h2>Receipts & transactions</h2>
+            <h2>Transactions</h2>
           </div>
           <button className="button secondary" onClick={() => void load()}>Refresh</button>
         </div>
@@ -198,7 +186,7 @@ export function ResidentPaymentsPage() {
         {loading ? (
           <StatePanel title="Loading payments…" />
         ) : payments.length === 0 ? (
-          <StatePanel title="No payments yet" message="Your monthly service and urgent pickup payments will appear here." />
+          <StatePanel title="No payments yet" message="Your payment records will appear here." />
         ) : (
           <div className="responsive-table-wrap">
             <table className="data-table payment-table">
@@ -216,10 +204,14 @@ export function ResidentPaymentsPage() {
                 {payments.map((payment) => (
                   <tr key={payment.id}>
                     <td>{new Date(payment.created_at).toLocaleDateString()}</td>
-                    <td>{payment.payment_type === "monthly_service" ? "Monthly plan" : `Urgent #${payment.request_id}`}</td>
+                    <td>{payment.payment_type === "monthly_service" ? "Monthly service" : `Extra pickup #${payment.request_id}`}</td>
                     <td className="code-text">{payment.receipt_number ?? payment.external_reference}</td>
                     <td>{payment.currency} {Number(payment.amount).toLocaleString()}</td>
-                    <td><span className={`status-badge status-${payment.status}`}>{payment.status}</span></td>
+                    <td>
+                      <span className={`status-badge status-${payment.status}`}>
+                        {payment.status}
+                      </span>
+                    </td>
                     <td>
                       {payment.status !== "succeeded" ? (
                         <button className="button secondary" disabled={busy} onClick={() => void completeDemo(payment.id)}>
