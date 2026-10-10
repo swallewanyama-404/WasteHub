@@ -17,6 +17,10 @@ class ComplaintUpdate(BaseModel):
     resolution: str | None = Field(default=None, max_length=3000)
 
 
+class ComplaintClose(BaseModel):
+    confirmation: str | None = Field(default=None, max_length=500)
+
+
 class ComplaintResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -30,5 +34,6 @@ class ComplaintResponse(BaseModel):
     resolution: str | None
     assigned_to: int | None
     resolved_at: datetime | None
+    closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
