@@ -28,7 +28,9 @@ export function ProtectedRoute({
         ? "/resident"
         : user.role === "collector"
           ? "/collector"
-          : "/organization";
+          : user.role === "system_admin"
+            ? "/admin"
+            : "/organization";
 
     return <Navigate to={fallback} replace />;
   }
