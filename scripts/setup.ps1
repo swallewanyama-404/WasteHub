@@ -54,4 +54,19 @@ Write-Host ""
 Write-Host "Secure WasteHub configuration created in .env."
 Write-Host "Starting the application..."
 & cmd /c "scripts\start.cmd"
-exit $LASTEXITCODE
+$startExit = $LASTEXITCODE
+
+if ($startExit -eq 0) {
+    (Get-Content ".env") |
+        ForEach-Object {
+            if ($_ -match "^WASTEHUB_ADMIN_PASSWORD=") {
+                "WASTEHUB_ADMIN_PASSWORD="
+            } else {
+                $_
+            }
+        } |
+        Set-Content ".env" -Encoding UTF8
+    Write-Host "Initial administrator password removed from .env after account creation."
+}
+
+exit $startExit
