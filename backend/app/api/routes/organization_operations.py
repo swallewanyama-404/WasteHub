@@ -22,75 +22,34 @@ from backend.app.services.organization_operations_service import (
 router = APIRouter()
 
 
-@router.get(
-    "/operations-queue",
-    response_model=list[OperationsQueueItemResponse],
-)
+@router.get("/operations-queue", response_model=list[OperationsQueueItemResponse])
 def operations_queue(
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return get_operations_queue(db=db)
+    return get_operations_queue(db, current_user)
 
 
-@router.get(
-    "/collectors/workload",
-    response_model=list[CollectorWorkloadResponse],
-)
+@router.get("/collectors/workload", response_model=list[CollectorWorkloadResponse])
 def collector_workloads(
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return get_collector_workloads(db=db)
+    return get_collector_workloads(db, current_user)
 
 
-@router.get(
-    "/available-vehicles",
-    response_model=list[AvailableVehicleResponse],
-)
+@router.get("/available-vehicles", response_model=list[AvailableVehicleResponse])
 def available_vehicles(
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return get_available_vehicles(db=db)
+    return get_available_vehicles(db, current_user)
 
 
-@router.post(
-    "/dispatch",
-    response_model=DispatchResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/dispatch", response_model=DispatchResponse, status_code=status.HTTP_201_CREATED)
 def dispatch_request(
     data: DispatchRequest,
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return dispatch_collection_request(
-        db=db,
-        data=data,
-        assigned_by=current_user.id,
-    )
+    return dispatch_collection_request(db=db, data=data, actor=current_user)
