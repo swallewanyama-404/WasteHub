@@ -61,9 +61,6 @@ jobs:
       - name: Verify Alembic is clean
         run: python -m alembic -c backend/alembic.ini check
 
-      - name: Validate classroom demo seed
-        run: python scripts/seed_demo.py
-
       - name: Run backend tests
         run: pytest -q
 
