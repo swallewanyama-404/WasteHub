@@ -1,4 +1,5 @@
 from datetime import date, datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.models.collection_request import (
@@ -24,11 +25,16 @@ class CollectionRequestCreate(BaseModel):
     preferred_time_window: str | None = Field(default=None, max_length=100)
 
 
+class CollectionRequestCancel(BaseModel):
+    reason: str = Field(min_length=2, max_length=1000)
+
+
 class CollectionRequestResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     resident_id: int
+    zone_id: int | None
     request_type: CollectionRequestType
     priority: CollectionRequestPriority
     status: CollectionRequestStatus
@@ -43,5 +49,7 @@ class CollectionRequestResponse(BaseModel):
     preferred_time_window: str | None
     scheduled_at: datetime | None
     completed_at: datetime | None
+    cancellation_reason: str | None
+    cancelled_at: datetime | None
     created_at: datetime
     updated_at: datetime
