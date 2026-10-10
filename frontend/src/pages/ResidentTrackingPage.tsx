@@ -188,6 +188,28 @@ export function ResidentTrackingPage() {
               </div>
             </section>
 
+            {tracking.collector_name ? (
+              <section className="panel contact-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Assigned collector</p>
+                    <h2>{tracking.collector_name}</h2>
+                  </div>
+                  <span className="contact-avatar">☎</span>
+                </div>
+                <p className="muted">
+                  Contact your assigned collector only when you need to coordinate access or the pickup location.
+                </p>
+                {tracking.collector_phone ? (
+                  <a className="button primary call-button" href={`tel:${tracking.collector_phone}`}>
+                    Call {tracking.collector_phone}
+                  </a>
+                ) : (
+                  <span className="status-badge">Phone unavailable</span>
+                )}
+              </section>
+            ) : null}
+
             <section className="panel">
               <h2>Your pickup point</h2>
               <div className="pickup-address-card">
