@@ -303,6 +303,7 @@ export interface AvailableVehicle {
   zone_id: number | null;
   registration_number: string;
   vehicle_type: string;
+  capacity_tons: number | null;
   status: string;
 }
 
