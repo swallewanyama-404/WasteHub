@@ -6,7 +6,9 @@ import { apiRequest } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import type {
   AssignmentMonitoring,
+  CollectorMapStop,
   LiveVehicle,
+  OperationsQueueItem,
   OrganizationAlert,
   ProviderPerformance,
 } from "../types";
@@ -18,48 +20,36 @@ export function OrganizationMonitoringPage() {
   const [performance, setPerformance] = useState<ProviderPerformance[]>([]);
   const [vehicles, setVehicles] = useState<LiveVehicle[]>([]);
   const [alerts, setAlerts] = useState<OrganizationAlert[]>([]);
+  const [queue, setQueue] = useState<OperationsQueueItem[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
-
     try {
-      const [assignmentData, lateData, performanceData, vehicleData, alertData] =
-        await Promise.all([
-          apiRequest<AssignmentMonitoring[]>(
-            "/organization-portal/assignments/monitoring",
-            {},
-            token,
-          ),
-          apiRequest<AssignmentMonitoring[]>(
-            "/organization-portal/assignments/late",
-            {},
-            token,
-          ),
-          apiRequest<ProviderPerformance[]>(
-            "/organization-portal/providers/performance",
-            {},
-            token,
-          ),
-          apiRequest<LiveVehicle[]>(
-            "/organization-portal/live-vehicles",
-            {},
-            token,
-          ),
-          apiRequest<OrganizationAlert[]>(
-            "/organization-portal/alerts",
-            {},
-            token,
-          ),
-        ]);
+      const [
+        assignmentData,
+        lateData,
+        performanceData,
+        vehicleData,
+        alertData,
+        queueData,
+      ] = await Promise.all([
+        apiRequest<AssignmentMonitoring[]>("/organization-portal/assignments/monitoring", {}, token),
+        apiRequest<AssignmentMonitoring[]>("/organization-portal/assignments/late", {}, token),
+        apiRequest<ProviderPerformance[]>("/organization-portal/providers/performance", {}, token),
+        apiRequest<LiveVehicle[]>("/organization-portal/live-vehicles", {}, token),
+        apiRequest<OrganizationAlert[]>("/organization-portal/alerts", {}, token),
+        apiRequest<OperationsQueueItem[]>("/organization-portal/operations-queue", {}, token),
+      ]);
 
       setAssignments(assignmentData);
       setLate(lateData);
       setPerformance(performanceData);
       setVehicles(vehicleData);
       setAlerts(alertData);
+      setQueue(queueData);
       setError("");
 
       if (!selectedVehicleId && vehicleData.length > 0) {
@@ -74,11 +64,7 @@ export function OrganizationMonitoringPage() {
 
   useEffect(() => {
     void load();
-
-    const timer = window.setInterval(() => {
-      void load();
-    }, 15000);
-
+    const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
   }, [load]);
 
@@ -90,10 +76,7 @@ export function OrganizationMonitoringPage() {
   );
 
   const truck =
-    selectedVehicle?.latitude !== null &&
-    selectedVehicle?.latitude !== undefined &&
-    selectedVehicle.longitude !== null &&
-    selectedVehicle.longitude !== undefined
+    selectedVehicle?.latitude != null && selectedVehicle.longitude != null
       ? {
           latitude: selectedVehicle.latitude,
           longitude: selectedVehicle.longitude,
@@ -101,140 +84,182 @@ export function OrganizationMonitoringPage() {
         }
       : null;
 
+  const activeStops = useMemo<CollectorMapStop[]>(
+    () =>
+      queue
+        .filter(
+          (item) =>
+            item.assignment_id != null &&
+            item.pickup_latitude != null &&
+            item.pickup_longitude != null,
+        )
+        .map((item) => ({
+          assignment_id: item.assignment_id as number,
+          request_id: item.request_id,
+          pickup_address: item.pickup_address,
+          pickup_latitude: item.pickup_latitude,
+          pickup_longitude: item.pickup_longitude,
+          assignment_status: item.assignment_status ?? "pending",
+          scheduled_at: null,
+          map_state:
+            item.assignment_status === "in_progress"
+              ? "next"
+              : item.assignment_status ?? "upcoming",
+          is_next_stop:
+            selectedVehicle?.assignment_id === item.assignment_id,
+        })),
+    [queue, selectedVehicle],
+  );
+
+  const selectedPickup = activeStops.find(
+    (stop) => stop.assignment_id === selectedVehicle?.assignment_id,
+  );
+
+  const pickup =
+    selectedPickup?.pickup_latitude != null && selectedPickup.pickup_longitude != null
+      ? {
+          latitude: selectedPickup.pickup_latitude,
+          longitude: selectedPickup.pickup_longitude,
+          label: selectedPickup.pickup_address,
+        }
+      : null;
+
   return (
     <AppShell>
       <div className="page-header">
         <div>
-          <p className="eyebrow">Operations monitoring</p>
-          <h1>Live fleet & service performance</h1>
+          <p className="eyebrow">Live monitoring</p>
+          <h1>Fleet & service performance</h1>
           <p className="muted">
-            Monitor late pickups, active vehicles, provider performance, and
-            operational exceptions.
+            Follow vehicles, late collections, provider performance and operational exceptions as they change.
           </p>
         </div>
-        <button className="button secondary" onClick={() => void load()}>
-          Refresh
-        </button>
+        <button className="button secondary" onClick={() => void load()}>Refresh</button>
       </div>
 
       {loading ? (
-        <StatePanel title="Loading operations monitoring…" />
+        <StatePanel title="Loading live operations…" />
       ) : error ? (
         <StatePanel title="Monitoring unavailable" message={error} />
       ) : (
-        <div className="page-stack">
-          <section className="metric-grid compact-metrics">
-            <article className="metric-card">
-              <span>Assignments</span>
-              <strong>{assignments.length}</strong>
-            </article>
-            <article className="metric-card">
-              <span>Late pickups</span>
-              <strong>{late.length}</strong>
-            </article>
-            <article className="metric-card">
-              <span>Live vehicles</span>
-              <strong>{vehicles.length}</strong>
-            </article>
-            <article className="metric-card">
-              <span>Active alerts</span>
-              <strong>{alerts.length}</strong>
-            </article>
+        <>
+          <section className="monitoring-kpi-grid">
+            <article><span>Active assignments</span><strong>{assignments.filter((item) => !["completed", "missed", "cancelled", "rejected"].includes(item.assignment_status)).length}</strong></article>
+            <article><span>Late pickups</span><strong>{late.length}</strong></article>
+            <article><span>Live vehicles</span><strong>{vehicles.length}</strong></article>
+            <article><span>Operational alerts</span><strong>{alerts.length}</strong></article>
           </section>
 
-          <div className="two-column-grid">
-            <section className="panel">
+          <div className="monitoring-primary-grid">
+            <section className="panel operations-map-panel">
               <div className="section-heading">
-                <h2>Live fleet</h2>
+                <div>
+                  <p className="eyebrow">Fleet map</p>
+                  <h2>{selectedVehicle ? selectedVehicle.registration_number : "No vehicle selected"}</h2>
+                </div>
                 <select
                   value={selectedVehicleId}
                   onChange={(event) => setSelectedVehicleId(event.target.value)}
+                  aria-label="Live vehicle"
                 >
-                  <option value="">Select vehicle</option>
+                  <option value="">Select live vehicle</option>
                   {vehicles.map((vehicle) => (
                     <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                      {vehicle.registration_number}
+                      {vehicle.registration_number} · assignment #{vehicle.assignment_id}
                     </option>
                   ))}
                 </select>
               </div>
-              <OperationsMap truck={truck} />
+
+              {vehicles.length === 0 ? (
+                <StatePanel
+                  title="No vehicles currently live"
+                  message="The map activates when a collector starts a GPS session."
+                />
+              ) : (
+                <OperationsMap stops={activeStops} truck={truck} pickup={pickup} />
+              )}
+
+              {selectedVehicle ? (
+                <div className="fleet-detail-strip">
+                  <div><span>Assignment</span><strong>#{selectedVehicle.assignment_id}</strong></div>
+                  <div><span>Collector</span><strong>#{selectedVehicle.collector_id}</strong></div>
+                  <div><span>Speed</span><strong>{selectedVehicle.speed_kmh != null ? `${selectedVehicle.speed_kmh.toFixed(1)} km/h` : "—"}</strong></div>
+                  <div><span>Last update</span><strong>{selectedVehicle.recorded_at ? new Date(selectedVehicle.recorded_at).toLocaleTimeString() : "Waiting for GPS"}</strong></div>
+                </div>
+              ) : null}
             </section>
 
-            <section className="panel">
-              <h2>Operational alerts</h2>
-              {alerts.length === 0 ? (
-                <StatePanel title="No active alerts" />
+            <aside className="panel exception-panel">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Exceptions</p>
+                  <h2>Needs attention</h2>
+                </div>
+              </div>
+
+              {late.length === 0 && alerts.length === 0 ? (
+                <StatePanel title="No active exceptions" />
               ) : (
-                <div className="list-stack">
-                  {alerts.slice(0, 10).map((alert) => (
-                    <article className="list-card" key={alert.alert_id}>
-                      <div className="section-heading">
+                <div className="exception-list">
+                  {late.slice(0, 6).map((assignment) => (
+                    <article key={`late-${assignment.assignment_id}`}>
+                      <span className="exception-symbol late">!</span>
+                      <div>
+                        <strong>{assignment.pickup_address}</strong>
+                        <p>Assignment #{assignment.assignment_id} · {assignment.minutes_late ?? 0} min late</p>
+                      </div>
+                    </article>
+                  ))}
+                  {alerts.slice(0, 6).map((alert) => (
+                    <article key={alert.alert_id}>
+                      <span className={`exception-symbol ${alert.severity}`}>!</span>
+                      <div>
                         <strong>{alert.title}</strong>
-                        <span className={`severity-badge ${alert.severity}`}>
-                          {alert.severity}
-                        </span>
+                        <p>{alert.message}</p>
                       </div>
-                      <p>{alert.message}</p>
                     </article>
                   ))}
                 </div>
               )}
-            </section>
+            </aside>
           </div>
 
-          <div className="two-column-grid">
-            <section className="panel">
-              <h2>Late collections</h2>
-              {late.length === 0 ? (
-                <StatePanel title="No late collections" />
-              ) : (
-                <div className="list-stack">
-                  {late.map((assignment) => (
-                    <article className="list-card" key={assignment.assignment_id}>
-                      <div className="section-heading">
-                        <div>
-                          <strong>{assignment.pickup_address}</strong>
-                          <p className="muted">
-                            Assignment #{assignment.assignment_id}
-                          </p>
-                        </div>
-                        <span className="severity-badge high">
-                          {assignment.minutes_late ?? 0} min late
-                        </span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
+          <section className="panel section-spacer">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Provider performance</p>
+                <h2>Collection quality</h2>
+              </div>
+            </div>
 
-            <section className="panel">
-              <h2>Provider performance</h2>
-              {performance.length === 0 ? (
-                <StatePanel title="No provider performance data" />
-              ) : (
-                <div className="list-stack">
-                  {performance.map((provider) => (
-                    <article className="list-card" key={provider.provider_id}>
-                      <div className="section-heading">
+            {performance.length === 0 ? (
+              <StatePanel title="No provider performance data" />
+            ) : (
+              <div className="provider-performance-grid">
+                {performance.map((provider) => (
+                  <article key={provider.provider_id}>
+                    <div className="section-heading">
+                      <div>
                         <strong>{provider.provider_name}</strong>
-                        <span className="status-badge">
-                          {provider.completion_rate_percent}% complete
-                        </span>
+                        <p>{provider.provider_code}</p>
                       </div>
-                      <p className="muted">
-                        {provider.completed_assignments} completed ·{" "}
-                        {provider.missed_assignments} missed ·{" "}
-                        {provider.active_assignments} active
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        </div>
+                      <span className="performance-score">{provider.completion_rate_percent.toFixed(0)}%</span>
+                    </div>
+                    <div className="performance-bar">
+                      <i style={{ width: `${Math.min(100, provider.completion_rate_percent)}%` }} />
+                    </div>
+                    <div className="provider-metrics">
+                      <span>{provider.active_assignments} active</span>
+                      <span>{provider.completed_assignments} completed</span>
+                      <span>{provider.missed_assignments} missed</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       )}
     </AppShell>
   );
