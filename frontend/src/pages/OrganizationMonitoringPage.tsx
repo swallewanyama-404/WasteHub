@@ -91,7 +91,8 @@ export function OrganizationMonitoringPage() {
           (item) =>
             item.assignment_id != null &&
             item.pickup_latitude != null &&
-            item.pickup_longitude != null,
+            item.pickup_longitude != null &&
+            (!selectedVehicle || item.collector_id === selectedVehicle.collector_id),
         )
         .map((item) => ({
           assignment_id: item.assignment_id as number,
