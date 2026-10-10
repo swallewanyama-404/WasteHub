@@ -155,6 +155,10 @@ def _advance_tracking(
     )
 
     if active_session is None:
+        if completed_assignment.vehicle_id is not None:
+            reserved_vehicle = db.get(Vehicle, completed_assignment.vehicle_id)
+            if reserved_vehicle is not None and reserved_vehicle.status == VehicleStatus.ASSIGNED:
+                reserved_vehicle.status = VehicleStatus.AVAILABLE
         return None
 
     active_session.ended_at = datetime.now(
