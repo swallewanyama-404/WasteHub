@@ -13,9 +13,13 @@ const icons: Record<string, string> = {
   Operations: "⌂",
   Dispatch: "➜",
   Monitoring: "◉",
+  Reviews: "✓",
   "Service desk": "☰",
+  Team: "●",
+  Fleet: "🚛",
   Overview: "◆",
   Users: "●",
+  Organizations: "▦",
   Audit: "☷",
 };
 
@@ -54,6 +58,7 @@ export function WorkspaceNav() {
         items: [
           ["/admin", "Overview"],
           ["/admin/users", "Users"],
+          ["/admin/organizations", "Organizations"],
           ["/admin/audit", "Audit"],
         ],
       },
@@ -63,7 +68,28 @@ export function WorkspaceNav() {
           ["/organization", "Operations"],
           ["/organization/dispatch", "Dispatch"],
           ["/organization/monitoring", "Monitoring"],
+          ["/organization/review", "Reviews"],
           ["/organization/service", "Service desk"],
+        ],
+      },
+    ];
+  } else if (user.role === "supervisor") {
+    groups = [
+      {
+        label: "Operations",
+        items: [
+          ["/organization", "Operations"],
+          ["/organization/dispatch", "Dispatch"],
+          ["/organization/monitoring", "Monitoring"],
+          ["/organization/review", "Reviews"],
+          ["/organization/service", "Service desk"],
+        ],
+      },
+      {
+        label: "Organization",
+        items: [
+          ["/organization/team", "Team"],
+          ["/organization/fleet", "Fleet"],
         ],
       },
     ];
@@ -73,6 +99,7 @@ export function WorkspaceNav() {
         ["/organization", "Operations"],
         ["/organization/dispatch", "Dispatch"],
         ["/organization/monitoring", "Monitoring"],
+        ["/organization/review", "Reviews"],
         ["/organization/service", "Service desk"],
       ],
     }];
