@@ -122,6 +122,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["provider_id"], ["service_providers.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("ix_provider_applications_id", "provider_applications", ["id"], unique=False)
     op.create_index("ix_provider_applications_proposed_code", "provider_applications", ["proposed_code"], unique=False)
     op.create_index("ix_provider_applications_status", "provider_applications", ["status"], unique=False)
     op.create_index("ix_provider_applications_supervisor_user_id", "provider_applications", ["supervisor_user_id"], unique=False)
@@ -131,6 +132,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_index("ix_provider_applications_id", table_name="provider_applications")
     op.drop_table("provider_applications")
     op.drop_table("provider_zones")
 
