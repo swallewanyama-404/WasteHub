@@ -4,8 +4,23 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 if (Test-Path ".env") {
-    Write-Host "WasteHub .env already exists. Nothing was changed."
-    exit 0
+    $existing = Get-Content ".env" -Raw
+    $isCurrent =
+        $existing -match "(?m)^POSTGRES_PASSWORD=.+" -and
+        $existing -match "(?m)^WASTEHUB_ADMIN_EMAIL=.+" -and
+        $existing -match "(?m)^PAYMENT_PROVIDER=manual_verification\s*$"
+
+    if ($isCurrent) {
+        Write-Host "WasteHub 1.0 configuration already exists. Nothing was changed."
+        exit 0
+    }
+
+    $backupPath = ".env.pre-v1-backup"
+    if (Test-Path $backupPath) {
+        $backupPath = ".env.pre-v1-backup.$(Get-Date -Format 'yyyyMMddHHmmss')"
+    }
+    Move-Item ".env" $backupPath
+    Write-Host "Previous environment configuration backed up to $backupPath."
 }
 
 Write-Host ""
