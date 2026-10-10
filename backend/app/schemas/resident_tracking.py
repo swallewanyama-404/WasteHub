@@ -14,6 +14,8 @@ class ResidentRequestTrackingResponse(BaseModel):
     request_status: str
     assignment_id: int | None = None
     assignment_status: str | None = None
+    collector_name: str | None = None
+    collector_phone: str | None = None
     tracking_active: bool = False
     vehicle_registration_number: str | None = None
     truck_latitude: float | None = None
