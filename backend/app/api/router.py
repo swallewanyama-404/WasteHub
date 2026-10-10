@@ -1,4 +1,6 @@
 from backend.app.api.routes.resident_service import router as resident_service_router
+from backend.app.api.routes.provider_applications import router as provider_applications_router
+from backend.app.api.routes.organization_team import router as organization_team_router
 from backend.app.api.routes.resident_tracking import router as resident_tracking_router
 from backend.app.api.routes.admin import router as admin_router
 from backend.app.api.routes.complaints import router as complaints_router
@@ -43,6 +45,16 @@ from backend.app.api.routes.collector_workflow import (
     router as collector_workflow_router,
 )
 api_router = APIRouter()
+api_router.include_router(
+    provider_applications_router,
+    prefix="/provider-applications",
+    tags=["Provider Applications"],
+)
+api_router.include_router(
+    organization_team_router,
+    prefix="/organization-portal",
+    tags=["Organization Team"],
+)
 api_router.include_router(
     resident_service_router,
     prefix="/resident",
