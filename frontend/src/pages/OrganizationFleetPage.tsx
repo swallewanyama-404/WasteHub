@@ -24,7 +24,7 @@ export function OrganizationFleetPage() {
     try {
       const [fleetData, zoneData] = await Promise.all([
         apiRequest<Vehicle[]>("/organization-portal/fleet", {}, token),
-        apiRequest<Zone[]>("/zones", {}, token),
+        apiRequest<Zone[]>("/organization-portal/zones", {}, token),
       ]);
       setFleet(fleetData);
       setZones(zoneData.filter((zone) => zone.is_active));
