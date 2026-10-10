@@ -291,7 +291,7 @@ export function OrganizationDispatchPage() {
                         <option value="">Select available truck</option>
                         {compatibleVehicles.map((vehicle) => (
                           <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                            {vehicle.registration_number} · {vehicle.vehicle_type}
+                            {vehicle.registration_number} · {vehicle.vehicle_type} · {vehicle.capacity_tons ?? "—"} tons
                           </option>
                         ))}
                       </select>
