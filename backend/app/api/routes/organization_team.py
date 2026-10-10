@@ -11,16 +11,26 @@ from backend.app.schemas.organization_team import (
     OrganizationVehicleStatusUpdate,
 )
 from backend.app.schemas.vehicle import VehicleResponse
+from backend.app.schemas.zone import ZoneResponse
 from backend.app.services.organization_team_service import (
     create_collector,
     create_fleet_vehicle,
     list_fleet,
     list_team,
+    list_service_zones,
     update_fleet_vehicle_status,
 )
 
 
 router = APIRouter()
+
+
+@router.get("/zones", response_model=list[ZoneResponse])
+def service_zones(
+    current_user: User = Depends(require_roles("supervisor")),
+    db: Session = Depends(get_db),
+):
+    return list_service_zones(db, current_user)
 
 
 @router.get("/team", response_model=list[AdminUserResponse])
