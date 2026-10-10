@@ -149,7 +149,7 @@ export function ResidentDashboardPage() {
         token,
       );
       setNotice(
-        `Request #${cancelRequest.id} was cancelled. If it had already been paid, its payment is now flagged for refund review in this demo.`,
+        `Request #${cancelRequest.id} was cancelled. If it had already been paid, its payment is now flagged for refund review.`,
       );
       setCancelRequest(null);
       setCancelReason("");
@@ -329,7 +329,7 @@ export function ResidentDashboardPage() {
             <p className="eyebrow">Cancel request #{cancelRequest.id}</p>
             <h2>Are you sure you no longer need this pickup?</h2>
             <p className="muted">
-              The collector will be notified immediately. A paid urgent pickup is sent for refund review in the demo environment.
+              The collector will be notified immediately. A paid urgent pickup is sent for refund review.
             </p>
             <label>
               Reason for cancellation
