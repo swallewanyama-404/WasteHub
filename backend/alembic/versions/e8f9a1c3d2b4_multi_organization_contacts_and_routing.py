@@ -55,9 +55,13 @@ def upgrade() -> None:
     op.add_column("collection_requests", sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True))
     op.create_index("ix_collection_requests_zone_id", "collection_requests", ["zone_id"], unique=False)
 
+    op.add_column("vehicles", sa.Column("zone_id", sa.Integer(), nullable=True))
+    op.create_index("ix_vehicles_zone_id", "vehicles", ["zone_id"], unique=False)
+
     op.add_column("collection_assignments", sa.Column("vehicle_id", sa.Integer(), nullable=True))
     op.create_index("ix_collection_assignments_vehicle_id", "collection_assignments", ["vehicle_id"], unique=False)
 
+    op.create_foreign_key("fk_vehicles_zone_id", "vehicles", "zones", ["zone_id"], ["id"], ondelete="SET NULL")
     op.create_foreign_key("fk_users_provider_id", "users", "service_providers", ["provider_id"], ["id"], ondelete="SET NULL")
     op.create_foreign_key("fk_users_zone_id", "users", "zones", ["zone_id"], ["id"], ondelete="SET NULL")
     op.create_foreign_key("fk_requests_zone_id", "collection_requests", "zones", ["zone_id"], ["id"], ondelete="SET NULL")
@@ -130,12 +134,15 @@ def downgrade() -> None:
 
     op.drop_constraint("fk_service_providers_approved_by", "service_providers", type_="foreignkey")
     op.drop_constraint("fk_assignments_vehicle_id", "collection_assignments", type_="foreignkey")
+    op.drop_constraint("fk_vehicles_zone_id", "vehicles", type_="foreignkey")
     op.drop_constraint("fk_requests_zone_id", "collection_requests", type_="foreignkey")
     op.drop_constraint("fk_users_zone_id", "users", type_="foreignkey")
     op.drop_constraint("fk_users_provider_id", "users", type_="foreignkey")
 
     op.drop_index("ix_collection_assignments_vehicle_id", table_name="collection_assignments")
     op.drop_column("collection_assignments", "vehicle_id")
+    op.drop_index("ix_vehicles_zone_id", table_name="vehicles")
+    op.drop_column("vehicles", "zone_id")
     op.drop_index("ix_collection_requests_zone_id", table_name="collection_requests")
     op.drop_column("collection_requests", "cancelled_at")
     op.drop_column("collection_requests", "cancellation_reason")
