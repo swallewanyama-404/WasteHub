@@ -44,6 +44,7 @@ def create_new_vehicle(db: Session, data: VehicleCreate, actor: User) -> Vehicle
         zone_id=data.zone_id,
         registration_number=registration_number,
         vehicle_type=data.vehicle_type.strip(),
+        capacity_tons=data.capacity_tons,
         status=data.status,
         is_active=data.is_active,
     )
