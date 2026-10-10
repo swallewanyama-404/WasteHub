@@ -104,10 +104,16 @@ def list_assignment_evidence(
     request = db.get(CollectionRequest, assignment.request_id)
 
     allowed = current_user.role in {
-        UserRole.SUPERVISOR,
         UserRole.WASTE_ADMIN,
         UserRole.SYSTEM_ADMIN,
     }
+
+    if (
+        current_user.role == UserRole.SUPERVISOR
+        and current_user.provider_id is not None
+        and assignment.provider_id == current_user.provider_id
+    ):
+        allowed = True
 
     if current_user.role == UserRole.COLLECTOR and assignment.collector_id == current_user.id:
         allowed = True
