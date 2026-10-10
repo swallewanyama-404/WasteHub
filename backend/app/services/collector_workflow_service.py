@@ -223,6 +223,11 @@ def reject_assignment(
     assignment.status = AssignmentStatus.REJECTED
     assignment.notes = reason
 
+    if assignment.vehicle_id is not None:
+        vehicle = db.get(Vehicle, assignment.vehicle_id)
+        if vehicle is not None and vehicle.status == VehicleStatus.ASSIGNED:
+            vehicle.status = VehicleStatus.AVAILABLE
+
     request.status = CollectionRequestStatus.ASSESSED
 
     event = CollectionEvent(
