@@ -14,9 +14,16 @@ docker compose up -d --build
 if errorlevel 1 exit /b %errorlevel%
 
 echo Waiting for the API to become healthy...
+set /a WASTEHUB_WAIT_ATTEMPTS=0
 :wait_api
 docker inspect --format="{{.State.Health.Status}}" wastehub-api 2>nul | findstr /I "healthy" >nul
 if errorlevel 1 (
+  set /a WASTEHUB_WAIT_ATTEMPTS+=1
+  if %WASTEHUB_WAIT_ATTEMPTS% GEQ 40 (
+    echo WasteHub API did not become healthy in time.
+    docker compose logs --tail=80 api
+    exit /b 1
+  )
   timeout /t 3 /nobreak >nul
   goto wait_api
 )
