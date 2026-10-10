@@ -365,7 +365,7 @@ def test_end_to_end_wastehub_workflow():
             "request_id": collection_request["id"],
             "category": "service_quality",
             "priority": "normal",
-            "description": "Demo complaint created during integration testing.",
+            "description": "Complaint created during integration testing.",
         },
     )
     assert complaint_response.status_code == 201, complaint_response.text
