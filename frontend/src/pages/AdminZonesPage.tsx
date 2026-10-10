@@ -141,7 +141,7 @@ export function AdminZonesPage() {
             </div>
             <div className="form-grid-two">
               <label>
-                Demo geofence radius (km)
+                Service radius (km)
                 <input required type="number" min="0.1" max="500" step="0.1" value={radius} onChange={(event) => setRadius(event.target.value)} />
               </label>
               <div className="zone-location-action">
@@ -150,7 +150,7 @@ export function AdminZonesPage() {
               </div>
             </div>
             <div className="compliance-disclaimer">
-              The classroom build uses circular service areas for reliable demos. A public deployment should replace these circles with authoritative government/GIS zone boundaries.
+              WasteHub currently models service areas as managed circular geofences. These boundaries can be replaced with authoritative GIS polygons when official zone data is available.
             </div>
             <button className="button primary" disabled={busy}>
               {busy ? "Creating…" : "Create service zone"}
