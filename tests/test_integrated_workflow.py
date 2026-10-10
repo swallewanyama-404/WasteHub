@@ -198,6 +198,50 @@ def test_end_to_end_wastehub_workflow():
     )
     assert urgent_payment_success.status_code == 200, urgent_payment_success.text
 
+    wrong_zone_response = client.post(
+        "/api/v1/zones",
+        headers=_auth(admin_token),
+        json={
+            "name": f"Wrong Service Zone {suffix}",
+            "code": f"WZ-{suffix}",
+            "municipality": "Other Municipality",
+            "description": "Deliberately separate integration zone",
+            "center_latitude": 1.5000,
+            "center_longitude": 32.5825,
+            "radius_km": 5,
+        },
+    )
+    assert wrong_zone_response.status_code == 201, wrong_zone_response.text
+    wrong_zone = wrong_zone_response.json()
+
+    wrong_provider_response = client.post(
+        "/api/v1/providers",
+        headers=_auth(admin_token),
+        json={
+            "name": f"Wrong Zone Provider {suffix}",
+            "code": f"WRONG-{suffix}",
+            "contact_phone": "+256700199999",
+            "contact_email": f"wrong-provider-{suffix}@example.com",
+            "zone_ids": [wrong_zone["id"]],
+        },
+    )
+    assert wrong_provider_response.status_code == 201, wrong_provider_response.text
+    wrong_provider = wrong_provider_response.json()
+
+    cross_zone_dispatch = client.post(
+        "/api/v1/organization-portal/dispatch",
+        headers=_auth(admin_token),
+        json={
+            "request_id": collection_request["id"],
+            "provider_id": wrong_provider["id"],
+            "collector_id": collector_id,
+            "vehicle_id": None,
+            "notes": "This must be rejected because the provider serves another zone",
+        },
+    )
+    assert cross_zone_dispatch.status_code == 409, cross_zone_dispatch.text
+    assert "does not operate" in cross_zone_dispatch.json()["detail"].lower()
+
     dispatch_response = client.post(
         "/api/v1/organization-portal/dispatch",
         headers=_auth(admin_token),
@@ -255,6 +299,14 @@ def test_end_to_end_wastehub_workflow():
     )
     assert start_response.status_code == 200, start_response.text
     assert start_response.json()["assignment_status"] == "in_progress"
+
+    completion_without_evidence = client.post(
+        f"/api/v1/operations-map/collector/stops/{assignment_id}/complete",
+        headers=_auth(collector_token),
+        json={"notes": "Must fail until collection photo is uploaded"},
+    )
+    assert completion_without_evidence.status_code == 409, completion_without_evidence.text
+    assert "photo" in completion_without_evidence.json()["detail"].lower()
 
     resident_tracking_live = client.get(
         f"/api/v1/resident/requests/{collection_request['id']}/tracking",
