@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Integer, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.db.base import Base
@@ -29,6 +29,7 @@ class Vehicle(Base):
         String(30), unique=True, nullable=False, index=True
     )
     vehicle_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    capacity_tons: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
     status: Mapped[VehicleStatus] = mapped_column(
         SAEnum(
             VehicleStatus,
