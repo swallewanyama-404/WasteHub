@@ -149,6 +149,15 @@ def cancel_request(
             raise HTTPException(status_code=409, detail="Collection has already started")
 
         active_assignment.status = AssignmentStatus.CANCELLED
+
+        reserved_vehicle = (
+            db.get(Vehicle, active_assignment.vehicle_id)
+            if active_assignment.vehicle_id is not None
+            else None
+        )
+        if reserved_vehicle is not None and reserved_vehicle.status == VehicleStatus.ASSIGNED:
+            reserved_vehicle.status = VehicleStatus.AVAILABLE
+
         db.add(
             CollectionEvent(
                 assignment_id=active_assignment.id,
