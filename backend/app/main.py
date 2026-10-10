@@ -11,10 +11,10 @@ from backend.app.core.middleware import SecurityHeadersMiddleware
 app = FastAPI(
     title=settings.app_name,
     description=(
-        "WasteHub is a proposed digital waste collection and "
-        "service-response management platform."
+        "WasteHub is a digital waste collection and service-response "
+        "management platform for residents, collectors and service operators."
     ),
-    version="0.1.0",
+    version="1.0.0",
     debug=settings.debug,
 )
 
@@ -72,6 +72,6 @@ def root():
         "name": settings.app_name,
         "status": "running",
         "message": "Welcome to WasteHub API",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "environment": settings.app_env,
     }
