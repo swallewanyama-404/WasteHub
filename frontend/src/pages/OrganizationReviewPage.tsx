@@ -192,7 +192,7 @@ export function OrganizationReviewPage() {
   }
 
   const missedAlerts = alerts.filter((alert) =>
-    ["missed_collection", "overdue_pickup", "unassigned_request"].includes(alert.alert_type),
+    ["missed_collection", "rejected_assignment", "overdue_pickup", "unassigned_request"].includes(alert.alert_type),
   );
 
   return (
