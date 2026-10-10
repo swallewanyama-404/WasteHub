@@ -1,11 +1,11 @@
-from backend.app.models.collection_assignment import (
-    AssignmentStatus,
-    CollectionAssignment,
-)
-from backend.app.models.collection_event import (
-    CollectionEvent,
-    CollectionEventType,
-)
+from backend.app.models.audit_log import AuditLog
+from backend.app.models.collection_evidence import CollectionEvidence
+from backend.app.models.complaint import Complaint
+from backend.app.models.feedback import Feedback
+from backend.app.models.notification import Notification
+from backend.app.models.payment import Payment
+from backend.app.models.collection_assignment import AssignmentStatus, CollectionAssignment
+from backend.app.models.collection_event import CollectionEvent, CollectionEventType
 from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestPriority,
@@ -13,6 +13,8 @@ from backend.app.models.collection_request import (
     CollectionRequestType,
 )
 from backend.app.models.provider import ServiceProvider
+from backend.app.models.provider_application import ProviderApplication
+from backend.app.models.provider_zone import ProviderZone
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.user import User
 from backend.app.models.vehicle import Vehicle, VehicleStatus
@@ -24,6 +26,8 @@ __all__ = [
     "User",
     "Zone",
     "ServiceProvider",
+    "ProviderApplication",
+    "ProviderZone",
     "CollectionRequest",
     "CollectionRequestType",
     "CollectionRequestPriority",
@@ -36,4 +40,10 @@ __all__ = [
     "VehicleStatus",
     "TrackingSession",
     "VehicleLocation",
+    "Notification",
+    "Complaint",
+    "Feedback",
+    "Payment",
+    "AuditLog",
+    "CollectionEvidence",
 ]

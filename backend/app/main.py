@@ -5,15 +5,16 @@ from fastapi.responses import JSONResponse
 from backend.app.api.router import api_router
 from backend.app.core.config import settings
 from backend.app.core.exceptions import WasteHubException
+from backend.app.core.middleware import SecurityHeadersMiddleware
 
 
 app = FastAPI(
     title=settings.app_name,
     description=(
-        "WasteHub is a proposed digital waste collection and "
-        "service-response management platform."
+        "WasteHub is a digital waste collection and service-response "
+        "management platform for residents, collectors and service operators."
     ),
-    version="0.1.0",
+    version="1.0.0",
     debug=settings.debug,
 )
 
@@ -24,6 +25,8 @@ cors_origins = [
     if origin.strip()
 ]
 
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,7 +69,9 @@ app.include_router(
 @app.get("/")
 def root():
     return {
+        "name": settings.app_name,
+        "status": "running",
         "message": "Welcome to WasteHub API",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "environment": settings.app_env,
     }

@@ -17,43 +17,17 @@ from backend.app.services.organization_alert_service import (
 router = APIRouter()
 
 
-@router.get(
-    "/alerts",
-    response_model=list[
-        OrganizationAlertResponse
-    ],
-)
+@router.get("/alerts", response_model=list[OrganizationAlertResponse])
 def organization_alerts(
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return get_organization_alerts(
-        db=db
-    )
+    return get_organization_alerts(db, current_user)
 
 
-@router.get(
-    "/alerts/summary",
-    response_model=(
-        OrganizationAlertSummaryResponse
-    ),
-)
+@router.get("/alerts/summary", response_model=OrganizationAlertSummaryResponse)
 def organization_alert_summary(
-    current_user: User = Depends(
-        require_roles(
-            "supervisor",
-            "waste_admin",
-            "system_admin",
-        )
-    ),
+    current_user: User = Depends(require_roles("supervisor", "waste_admin", "system_admin")),
     db: Session = Depends(get_db),
 ):
-    return get_organization_alert_summary(
-        db=db
-    )
+    return get_organization_alert_summary(db, current_user)

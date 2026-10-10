@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,8 @@ class Settings(BaseSettings):
 
     secret_key: str = "change-this-development-secret"
     access_token_expire_minutes: int = 30
+    media_root: str = "media"
+    payment_provider: str = "manual_verification"
 
     cors_origins: str = (
         "http://localhost:3000,"
@@ -26,6 +29,22 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if self.app_env.lower() == "production":
+            if self.secret_key in {
+                "change-this-development-secret",
+                "replace-with-a-long-random-secret",
+            } or len(self.secret_key) < 32:
+                raise ValueError(
+                    "A strong SECRET_KEY is required when APP_ENV=production."
+                )
+            if self.debug:
+                raise ValueError(
+                    "DEBUG must be false when APP_ENV=production."
+                )
+        return self
 
 
 settings = Settings()

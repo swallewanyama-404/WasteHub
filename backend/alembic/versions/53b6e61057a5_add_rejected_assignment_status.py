@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.execute(
         """
         ALTER TYPE assignment_status
-        ADD VALUE IF NOT EXISTS 'rejected'
+        ADD VALUE IF NOT EXISTS 'REJECTED'
         """
     )
 

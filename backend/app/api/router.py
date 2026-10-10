@@ -1,3 +1,13 @@
+from backend.app.api.routes.resident_service import router as resident_service_router
+from backend.app.api.routes.provider_applications import router as provider_applications_router
+from backend.app.api.routes.organization_team import router as organization_team_router
+from backend.app.api.routes.resident_tracking import router as resident_tracking_router
+from backend.app.api.routes.admin import router as admin_router
+from backend.app.api.routes.complaints import router as complaints_router
+from backend.app.api.routes.evidence import router as evidence_router
+from backend.app.api.routes.feedback import router as feedback_router
+from backend.app.api.routes.notifications import router as notifications_router
+from backend.app.api.routes.payments import router as payments_router
 from fastapi import APIRouter
 
 from backend.app.api.routes.auth import router as auth_router
@@ -35,6 +45,56 @@ from backend.app.api.routes.collector_workflow import (
     router as collector_workflow_router,
 )
 api_router = APIRouter()
+api_router.include_router(
+    provider_applications_router,
+    prefix="/provider-applications",
+    tags=["Provider Applications"],
+)
+api_router.include_router(
+    organization_team_router,
+    prefix="/organization-portal",
+    tags=["Organization Team"],
+)
+api_router.include_router(
+    resident_service_router,
+    prefix="/resident",
+    tags=["Resident Service"],
+)
+api_router.include_router(
+    resident_tracking_router,
+    prefix="/resident",
+    tags=["Resident Tracking"],
+)
+api_router.include_router(
+    notifications_router,
+    prefix="/notifications",
+    tags=["Notifications"],
+)
+api_router.include_router(
+    complaints_router,
+    prefix="/complaints",
+    tags=["Complaints"],
+)
+api_router.include_router(
+    feedback_router,
+    prefix="/feedback",
+    tags=["Feedback"],
+)
+api_router.include_router(
+    payments_router,
+    prefix="/payments",
+    tags=["Payments"],
+)
+api_router.include_router(
+    evidence_router,
+    prefix="/evidence",
+    tags=["Collection Evidence"],
+)
+api_router.include_router(
+    admin_router,
+    prefix="/admin",
+    tags=["Administration"],
+)
 api_router.include_router(
     collector_workflow_router,
     prefix="/collector",

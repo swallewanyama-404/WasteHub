@@ -88,6 +88,7 @@ def get_collector_operations_map(
 
     for assignment, request in rows:
         if assignment.status not in {
+            AssignmentStatus.REJECTED,
             AssignmentStatus.COMPLETED,
             AssignmentStatus.MISSED,
             AssignmentStatus.CANCELLED,
@@ -113,6 +114,9 @@ def get_collector_operations_map(
 
         elif assignment.status == AssignmentStatus.MISSED:
             map_state = "missed"
+
+        elif assignment.status == AssignmentStatus.REJECTED:
+            map_state = "rejected"
 
         elif assignment.id == next_assignment_id:
             pending_count += 1

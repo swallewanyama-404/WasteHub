@@ -12,12 +12,16 @@ from backend.app.models.collection_event import (
     CollectionEvent,
     CollectionEventType,
 )
+from backend.app.models.collection_evidence import CollectionEvidence
 from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestStatus,
+    CollectionRequestType,
 )
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
+from backend.app.services.audit_service import record_audit
+from backend.app.services.notification_service import create_notification
 from backend.app.schemas.route_progress import (
     RouteProgressResponse,
     RouteStopAction,
@@ -25,6 +29,7 @@ from backend.app.schemas.route_progress import (
 
 
 TERMINAL_ASSIGNMENT_STATUSES = {
+    AssignmentStatus.REJECTED,
     AssignmentStatus.COMPLETED,
     AssignmentStatus.MISSED,
     AssignmentStatus.CANCELLED,
@@ -151,6 +156,10 @@ def _advance_tracking(
     )
 
     if active_session is None:
+        if completed_assignment.vehicle_id is not None:
+            reserved_vehicle = db.get(Vehicle, completed_assignment.vehicle_id)
+            if reserved_vehicle is not None and reserved_vehicle.status == VehicleStatus.ASSIGNED:
+                reserved_vehicle.status = VehicleStatus.AVAILABLE
         return None
 
     active_session.ended_at = datetime.now(
@@ -163,6 +172,12 @@ def _advance_tracking(
     )
 
     if next_assignment is None:
+        if vehicle is not None:
+            vehicle.status = VehicleStatus.AVAILABLE
+
+        return None
+
+    if next_assignment.status != AssignmentStatus.ACCEPTED:
         if vehicle is not None:
             vehicle.status = VehicleStatus.AVAILABLE
 
@@ -275,6 +290,12 @@ def start_collection_stop(
             detail="Collection stop is already in progress",
         )
 
+    if assignment.status != AssignmentStatus.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Accept the assignment before starting collection",
+        )
+
     collection_request = db.get(
         CollectionRequest,
         assignment.request_id,
@@ -297,6 +318,23 @@ def start_collection_stop(
         collector_id=collector_id,
         event_type=CollectionEventType.STARTED,
         notes=data.notes,
+    )
+
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection started",
+        message=f"Collection request #{collection_request.id} is now in progress.",
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.started",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id},
     )
 
     db.commit()
@@ -341,6 +379,20 @@ def complete_collection_stop(
             detail="Collection request not found",
         )
 
+    evidence_id = db.scalar(
+        select(CollectionEvidence.id)
+        .where(
+            CollectionEvidence.assignment_id == assignment.id,
+            CollectionEvidence.evidence_type == "collection_photo",
+        )
+        .limit(1)
+    )
+    if evidence_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Upload at least one collection photo before completing this stop",
+        )
+
     now = datetime.now(timezone.utc)
 
     assignment.status = AssignmentStatus.COMPLETED
@@ -372,6 +424,31 @@ def complete_collection_stop(
         next_assignment=next_assignment,
         collector_id=collector_id,
     )
+
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection completed",
+        message=f"Collection request #{collection_request.id} has been completed.",
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.completed",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id},
+    )
+
+    if collection_request.request_type == CollectionRequestType.ROUTINE:
+        from backend.app.services.automatic_routing_service import schedule_next_routine_collection
+        schedule_next_routine_collection(
+            db,
+            collection_request.resident_id,
+            after_date=collection_request.preferred_date or now.date(),
+        )
 
     db.commit()
     db.refresh(assignment)
@@ -442,6 +519,26 @@ def miss_collection_stop(
         completed_assignment=assignment,
         next_assignment=next_assignment,
         collector_id=collector_id,
+    )
+
+    create_notification(
+        db,
+        user_id=collection_request.resident_id,
+        notification_type="collection_progress",
+        title="Collection missed",
+        message=(
+            f"Collection request #{collection_request.id} was marked missed. "
+            "You can submit a complaint if follow-up is needed."
+        ),
+    )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="collection.missed",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": collection_request.id, "notes": data.notes},
     )
 
     db.commit()

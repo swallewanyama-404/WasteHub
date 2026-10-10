@@ -16,6 +16,10 @@ from backend.app.models.collection_request import (
     CollectionRequest,
     CollectionRequestStatus,
 )
+from backend.app.models.user import User
+from backend.app.models.vehicle import Vehicle, VehicleStatus
+from backend.app.services.audit_service import record_audit
+from backend.app.services.notification_service import create_notification
 from backend.app.schemas.collector_workflow import (
     CollectorAssignmentResponse,
     CollectorDashboardResponse,
@@ -77,11 +81,16 @@ def _response(
             detail="Collection request not found",
         )
 
+    resident = db.get(User, request.resident_id)
+
     return CollectorAssignmentResponse(
         assignment_id=assignment.id,
         request_id=request.id,
         provider_id=assignment.provider_id,
         collector_id=assignment.collector_id,
+        vehicle_id=assignment.vehicle_id,
+        resident_name=(resident.full_name if resident is not None else "Resident"),
+        resident_phone=(resident.phone_number if resident is not None else None),
         pickup_address=request.pickup_address,
         waste_type=request.waste_type,
         priority=_status_value(request.priority),
@@ -158,6 +167,26 @@ def accept_assignment(
     if notes:
         assignment.notes = notes
 
+    request = db.get(CollectionRequest, assignment.request_id)
+
+    if request is not None:
+        create_notification(
+            db,
+            user_id=request.resident_id,
+            notification_type="assignment",
+            title="Collector accepted your request",
+            message=f"Collection request #{request.id} has been accepted by the assigned collector.",
+        )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="assignment.accepted",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": assignment.request_id},
+    )
+
     db.commit()
     db.refresh(assignment)
 
@@ -196,6 +225,11 @@ def reject_assignment(
     assignment.status = AssignmentStatus.REJECTED
     assignment.notes = reason
 
+    if assignment.vehicle_id is not None:
+        vehicle = db.get(Vehicle, assignment.vehicle_id)
+        if vehicle is not None and vehicle.status == VehicleStatus.ASSIGNED:
+            vehicle.status = VehicleStatus.AVAILABLE
+
     request.status = CollectionRequestStatus.ASSESSED
 
     event = CollectionEvent(
@@ -207,6 +241,36 @@ def reject_assignment(
     )
 
     db.add(event)
+
+    create_notification(
+        db,
+        user_id=request.resident_id,
+        notification_type="assignment",
+        title="Collection assignment needs reassignment",
+        message=(
+            f"The collector could not take collection request #{request.id}. "
+            "The operations team can reassign it."
+        ),
+    )
+
+    if assignment.assigned_by != collector_id:
+        create_notification(
+            db,
+            user_id=assignment.assigned_by,
+            notification_type="assignment",
+            title="Collector rejected assignment",
+            message=f"Assignment #{assignment.id} was rejected and requires reassignment.",
+        )
+
+    record_audit(
+        db,
+        actor_id=collector_id,
+        action="assignment.rejected",
+        entity_type="collection_assignment",
+        entity_id=assignment.id,
+        details={"request_id": request.id, "reason": reason},
+    )
+
     db.commit()
 
     db.refresh(assignment)

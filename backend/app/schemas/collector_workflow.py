@@ -4,25 +4,22 @@ from pydantic import BaseModel, Field
 
 
 class CollectorAssignmentAction(BaseModel):
-    notes: str | None = Field(
-        default=None,
-        max_length=1000,
-    )
+    notes: str | None = Field(default=None, max_length=1000)
 
 
 class CollectorRejectAction(BaseModel):
-    reason: str = Field(
-        min_length=2,
-        max_length=1000,
-    )
+    reason: str = Field(min_length=2, max_length=1000)
 
 
 class CollectorAssignmentResponse(BaseModel):
     assignment_id: int
     request_id: int
-
     provider_id: int
     collector_id: int
+    vehicle_id: int | None = None
+
+    resident_name: str
+    resident_phone: str | None
 
     pickup_address: str
     waste_type: str
@@ -40,12 +37,10 @@ class CollectorAssignmentResponse(BaseModel):
 
 class CollectorDashboardResponse(BaseModel):
     collector_id: int
-
     total_assignments: int
     pending_assignments: int
     accepted_assignments: int
     in_progress_assignments: int
     completed_assignments: int
     missed_assignments: int
-
     next_assignment_id: int | None = None

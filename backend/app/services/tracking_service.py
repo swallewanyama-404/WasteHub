@@ -4,7 +4,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.collection_assignment import CollectionAssignment
+from backend.app.models.collection_assignment import (
+    AssignmentStatus,
+    CollectionAssignment,
+)
 from backend.app.models.tracking_session import TrackingSession
 from backend.app.models.vehicle import Vehicle, VehicleStatus
 from backend.app.models.vehicle_location import VehicleLocation
@@ -33,12 +36,30 @@ def start_tracking_session(
             detail="This assignment does not belong to the current collector",
         )
 
+    if assignment.status != AssignmentStatus.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Accept the assignment before starting GPS tracking",
+        )
+
+    if assignment.vehicle_id is not None and assignment.vehicle_id != data.vehicle_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This assignment already has a different truck reserved by operations",
+        )
+
     vehicle = db.get(Vehicle, data.vehicle_id)
 
     if vehicle is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Vehicle not found",
+        )
+
+    if assignment.provider_id != vehicle.provider_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The selected truck does not belong to the assignment's service provider",
         )
 
     if not vehicle.is_active:
@@ -81,6 +102,8 @@ def start_tracking_session(
             status_code=status.HTTP_409_CONFLICT,
             detail="Vehicle already has an active tracking session",
         )
+
+    assignment.vehicle_id = vehicle.id
 
     tracking_session = TrackingSession(
         assignment_id=data.assignment_id,
@@ -235,3 +258,18 @@ def get_tracking_location_history(
     )
 
     return list(db.scalars(statement).all())
+
+def get_active_tracking_sessions_for_collector(
+    db: Session,
+    collector_id: int,
+) -> list[TrackingSession]:
+    return list(
+        db.scalars(
+            select(TrackingSession)
+            .where(
+                TrackingSession.collector_id == collector_id,
+                TrackingSession.ended_at.is_(None),
+            )
+            .order_by(TrackingSession.started_at.desc())
+        ).all()
+    )
