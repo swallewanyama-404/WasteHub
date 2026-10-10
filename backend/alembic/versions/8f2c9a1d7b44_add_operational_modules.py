@@ -87,7 +87,7 @@ def upgrade() -> None:
         sa.Column("amount", sa.Numeric(precision=12, scale=2), nullable=False),
         sa.Column("currency", sa.String(length=3), nullable=False, server_default="UGX"),
         sa.Column("method", sa.String(length=40), nullable=False),
-        sa.Column("provider", sa.String(length=50), nullable=False, server_default="demo"),
+        sa.Column("provider", sa.String(length=50), nullable=False, server_default="manual_verification"),
         sa.Column("status", sa.String(length=30), nullable=False, server_default="pending"),
         sa.Column("external_reference", sa.String(length=120), nullable=False),
         sa.Column("receipt_number", sa.String(length=120), nullable=True),
