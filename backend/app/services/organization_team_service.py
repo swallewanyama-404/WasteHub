@@ -119,6 +119,7 @@ def create_fleet_vehicle(
         zone_id=data.zone_id,
         registration_number=registration,
         vehicle_type=data.vehicle_type,
+        capacity_tons=data.capacity_tons,
         status=VehicleStatus.AVAILABLE,
         is_active=True,
     )
