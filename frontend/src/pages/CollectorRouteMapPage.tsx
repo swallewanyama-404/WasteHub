@@ -4,22 +4,47 @@ import { OperationsMap } from "../components/OperationsMap";
 import { StatePanel } from "../components/StatePanel";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
-import type { CollectorOperationsMap } from "../types";
+import type {
+  CollectorOperationsMap,
+  TrackingSession,
+  VehicleLocation,
+} from "../types";
 
 export function CollectorRouteMapPage() {
   const { token } = useAuth();
   const [data, setData] = useState<CollectorOperationsMap | null>(null);
+  const [activeSession, setActiveSession] = useState<TrackingSession | null>(null);
+  const [location, setLocation] = useState<VehicleLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const result = await apiRequest<CollectorOperationsMap>(
-        "/operations-map/collector/stops",
-        {},
-        token,
-      );
-      setData(result);
+      const [mapData, sessions] = await Promise.all([
+        apiRequest<CollectorOperationsMap>("/operations-map/collector/stops", {}, token),
+        apiRequest<TrackingSession[]>("/tracking/sessions/mine/active", {}, token),
+      ]);
+
+      setData(mapData);
+      const session = sessions[0] ?? null;
+      setActiveSession(session);
+
+      if (session) {
+        try {
+          setLocation(
+            await apiRequest<VehicleLocation>(
+              `/tracking/sessions/${session.id}/locations/latest`,
+              {},
+              token,
+            ),
+          );
+        } catch {
+          setLocation(null);
+        }
+      } else {
+        setLocation(null);
+      }
+
       setError("");
     } catch {
       setError("Could not load the collection route map.");
@@ -39,13 +64,22 @@ export function CollectorRouteMapPage() {
     [data],
   );
 
+  const truck =
+    location
+      ? {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          label: activeSession ? `Active truck · GPS session #${activeSession.id}` : "Collection truck",
+        }
+      : null;
+
   return (
     <AppShell>
       <div className="page-header">
         <div>
           <p className="eyebrow">Route map</p>
           <h1>Today's collection route</h1>
-          <p className="muted">Follow the road route, current stop and collection progress.</p>
+          <p className="muted">Follow your road route, current truck position and collection progress.</p>
         </div>
         <button className="button secondary" onClick={() => void load()}>Refresh map</button>
       </div>
@@ -73,7 +107,16 @@ export function CollectorRouteMapPage() {
 
           <div className="collector-map-layout">
             <section className="panel collector-map-panel">
-              <OperationsMap stops={data.stops} />
+              <div className="section-heading route-map-heading">
+                <div>
+                  <p className="eyebrow">Live route</p>
+                  <h2>{activeSession ? "GPS tracking active" : "Route preview"}</h2>
+                </div>
+                <span className={activeSession ? "live-pill" : "status-badge"}>
+                  {activeSession ? "● LIVE" : "GPS OFF"}
+                </span>
+              </div>
+              <OperationsMap stops={data.stops} truck={truck} />
             </section>
 
             <aside className="panel route-stop-list">
