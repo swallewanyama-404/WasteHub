@@ -3,6 +3,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { OrganizationRegisterPage } from "./pages/OrganizationRegisterPage";
 import { ResidentOverviewPage } from "./pages/ResidentOverviewPage";
 import { ResidentDashboardPage } from "./pages/ResidentDashboardPage";
 import { ResidentProfilePage } from "./pages/ResidentProfilePage";
@@ -15,9 +16,13 @@ import { CollectorRouteMapPage } from "./pages/CollectorRouteMapPage";
 import { OrganizationDashboardPage } from "./pages/OrganizationDashboardPage";
 import { OrganizationDispatchPage } from "./pages/OrganizationDispatchPage";
 import { OrganizationMonitoringPage } from "./pages/OrganizationMonitoringPage";
+import { OrganizationReviewPage } from "./pages/OrganizationReviewPage";
 import { OrganizationServiceDeskPage } from "./pages/OrganizationServiceDeskPage";
+import { OrganizationTeamPage } from "./pages/OrganizationTeamPage";
+import { OrganizationFleetPage } from "./pages/OrganizationFleetPage";
 import { AdminOverviewPage } from "./pages/AdminOverviewPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
+import { AdminOrganizationsPage } from "./pages/AdminOrganizationsPage";
 import { AdminAuditPage } from "./pages/AdminAuditPage";
 
 export function App() {
@@ -26,6 +31,7 @@ export function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/organization/register" element={<OrganizationRegisterPage />} />
 
       <Route path="/resident" element={<ProtectedRoute allowedRoles={["resident"]}><ResidentOverviewPage /></ProtectedRoute>} />
       <Route path="/resident/requests" element={<ProtectedRoute allowedRoles={["resident"]}><ResidentDashboardPage /></ProtectedRoute>} />
@@ -41,10 +47,14 @@ export function App() {
       <Route path="/organization" element={<ProtectedRoute allowedRoles={["supervisor", "waste_admin", "system_admin"]}><OrganizationDashboardPage /></ProtectedRoute>} />
       <Route path="/organization/dispatch" element={<ProtectedRoute allowedRoles={["supervisor", "waste_admin", "system_admin"]}><OrganizationDispatchPage /></ProtectedRoute>} />
       <Route path="/organization/monitoring" element={<ProtectedRoute allowedRoles={["supervisor", "waste_admin", "system_admin"]}><OrganizationMonitoringPage /></ProtectedRoute>} />
+      <Route path="/organization/review" element={<ProtectedRoute allowedRoles={["supervisor", "waste_admin", "system_admin"]}><OrganizationReviewPage /></ProtectedRoute>} />
       <Route path="/organization/service" element={<ProtectedRoute allowedRoles={["supervisor", "waste_admin", "system_admin"]}><OrganizationServiceDeskPage /></ProtectedRoute>} />
+      <Route path="/organization/team" element={<ProtectedRoute allowedRoles={["supervisor"]}><OrganizationTeamPage /></ProtectedRoute>} />
+      <Route path="/organization/fleet" element={<ProtectedRoute allowedRoles={["supervisor"]}><OrganizationFleetPage /></ProtectedRoute>} />
 
       <Route path="/admin" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminOverviewPage /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/admin/organizations" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminOrganizationsPage /></ProtectedRoute>} />
       <Route path="/admin/audit" element={<ProtectedRoute allowedRoles={["system_admin"]}><AdminAuditPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
