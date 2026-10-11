@@ -110,6 +110,35 @@ def update_user(
     next_role = data.role if data.role is not None else user.role
     next_provider_id = data.provider_id if data.provider_id is not None else user.provider_id
     next_zone_id = data.zone_id if data.zone_id is not None else user.zone_id
+    next_is_active = data.is_active if data.is_active is not None else user.is_active
+
+    if user.id == actor.id and next_role != UserRole.SYSTEM_ADMIN:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "You cannot remove your own system administrator role. "
+                "Use another system administrator account for that change."
+            ),
+        )
+
+    removing_active_system_admin = (
+        user.role == UserRole.SYSTEM_ADMIN
+        and user.is_active
+        and (next_role != UserRole.SYSTEM_ADMIN or next_is_active is False)
+    )
+    if removing_active_system_admin:
+        other_active_system_admins = db.scalar(
+            select(func.count(User.id)).where(
+                User.id != user.id,
+                User.role == UserRole.SYSTEM_ADMIN,
+                User.is_active.is_(True),
+            )
+        ) or 0
+        if other_active_system_admins == 0:
+            raise HTTPException(
+                status_code=409,
+                detail="WasteHub must always retain at least one active system administrator",
+            )
 
     _validate_operational_links(
         db,
@@ -119,11 +148,6 @@ def update_user(
     )
 
     if data.role is not None:
-        if user.id == actor.id and data.role != UserRole.SYSTEM_ADMIN:
-            raise HTTPException(
-                status_code=409,
-                detail="You cannot remove your own system administrator role",
-            )
         user.role = data.role
     if data.phone_number is not None:
         user.phone_number = data.phone_number.strip()
