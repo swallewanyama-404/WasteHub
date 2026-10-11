@@ -236,7 +236,8 @@ export function AdminUsersPage() {
                       <td>
                         <select
                           value={target.role}
-                          disabled={busyId === target.id}
+                          disabled={busyId === target.id || isSelf}
+                          title={isSelf ? "You cannot change your own administrator role." : undefined}
                           onChange={(event) =>
                             void updateUser(target, { role: event.target.value as UserRole })
                           }
