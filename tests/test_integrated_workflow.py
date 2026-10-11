@@ -76,6 +76,24 @@ def test_end_to_end_wastehub_workflow():
     collector_token = _login(collector_email, password)
     resident_token = _login(resident_email, password)
 
+    admin_users_response = client.get(
+        "/api/v1/admin/users",
+        headers=_auth(admin_token),
+    )
+    assert admin_users_response.status_code == 200, admin_users_response.text
+    current_admin = next(
+        item for item in admin_users_response.json()
+        if item["email"] == admin_email
+    )
+
+    self_demote_response = client.patch(
+        f"/api/v1/admin/users/{current_admin['id']}",
+        headers=_auth(admin_token),
+        json={"role": "waste_admin"},
+    )
+    assert self_demote_response.status_code == 409, self_demote_response.text
+    assert "cannot remove your own system administrator role" in self_demote_response.json()["detail"].lower()
+
     zone_response = client.post(
         "/api/v1/zones",
         headers=_auth(admin_token),
