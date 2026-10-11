@@ -237,7 +237,7 @@ export function AdminUsersPage() {
                         <select
                           value={target.role}
                           disabled={busyId === target.id || isSelf}
-                          title={isSelf ? "You cannot change your own administrator role." : undefined}
+                          title={isSelf ? "Your own System Administrator role is protected to prevent account lockout." : undefined}
                           onChange={(event) =>
                             void updateUser(target, { role: event.target.value as UserRole })
                           }
@@ -264,7 +264,7 @@ export function AdminUsersPage() {
                         <button
                           className={target.is_active ? "button ghost danger-text" : "button secondary"}
                           disabled={busyId === target.id || (isSelf && target.is_active)}
-                          title={isSelf ? "You cannot deactivate your own account." : undefined}
+                          title={isSelf ? "Your own System Administrator account cannot be deactivated." : undefined}
                           onClick={() => void updateUser(target, { is_active: !target.is_active })}
                         >
                           {target.is_active ? "Deactivate" : "Reactivate"}
