@@ -119,6 +119,11 @@ def update_user(
     )
 
     if data.role is not None:
+        if user.id == actor.id and data.role != UserRole.SYSTEM_ADMIN:
+            raise HTTPException(
+                status_code=409,
+                detail="You cannot remove your own system administrator role",
+            )
         user.role = data.role
     if data.phone_number is not None:
         user.phone_number = data.phone_number.strip()
